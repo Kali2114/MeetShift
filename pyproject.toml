@@ -1,0 +1,20 @@
+[tool.ruff]
+line-length = 88
+force-exclude = true
+exclude = [
+    "migrations",
+    ".fastvenv",
+    "__pycache__",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.black]
+line-length = 88
+extend-exclude = '''
+/migrations/
+'''
+force-exclude = '''
+/migrations/
+'''
