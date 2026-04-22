@@ -27,7 +27,7 @@ jobs:
         run: docker compose run --rm app sh -c "black --check ."
 
       - name: Ruff lint check
-        run: docker compose run --rm app sh -c "ruff check ."
+        run: docker compose run --rm app sh -c "ruff check . --no-cache"
 
       - name: Run tests
         run: docker compose run --rm app sh -c "python manage.py test"
