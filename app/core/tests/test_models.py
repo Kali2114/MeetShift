@@ -35,6 +35,14 @@ def create_test_image():
     return SimpleUploadedFile("avatar.png", byte_arr.read(), content_type="image/png")
 
 
+def create_meeting(**params):
+    default_meeting = {
+        "title": "test_title",
+    }
+    default_meeting.update(**params)
+    return models.Meeting.objects.create(**default_meeting)
+
+
 class ModelTests(TestCase):
     """Test models."""
 
@@ -92,3 +100,10 @@ class ModelTests(TestCase):
         file_path = models.avatar_file_path(None, "example.jpg")
 
         self.assertEqual(file_path, f"uploads/avatar/{uuid}.jpg")
+
+    def test_create_meeting(self):
+        """Test creating meeting successful."""
+        organizer = create_user()
+        meeting = create_meeting(organizer=organizer)
+
+        self.assertEqual(str(meeting), f"{meeting.title} by {organizer.name}")

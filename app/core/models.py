@@ -5,6 +5,7 @@ Database models.
 import os
 import uuid
 
+from core import enums
 from core.utils import check_email_and_name
 from django.contrib.auth.models import (
     AbstractBaseUser,
@@ -67,3 +68,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         return self.email
+
+
+class Meeting(models.Model):
+    """Model for meeting object."""
+
+    title = models.CharField(max_length=255)
+    description = models.TextField()
+    organizer = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="organized_meetings"
+    )
+    status = models.CharField(max_length=3, choices=enums.STATUS_CHOICES, default="DRF")
+    started_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.title} by {self.organizer.name}"
