@@ -2,45 +2,12 @@
 Tests for models.
 """
 
-import io
 from unittest.mock import patch
 
 from core import models
+from core.tests import utils
 from django.contrib.auth import get_user_model
-from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase
-from PIL import Image
-
-
-def create_user(**params):
-    """Create and return a new user."""
-    default_user = {
-        "email": "test@example.com",
-        "password": "Test123",
-        "name": "TestName",
-    }
-    default_user.update(**params)
-
-    return get_user_model().objects.create_user(**default_user)
-
-
-def create_test_image():
-    """Create a dummy image for avatar."""
-    image = Image.new(
-        "RGB", (100, 100), color="blue"
-    )  # Tworzy niebieski obrazek 100x100
-    byte_arr = io.BytesIO()
-    image.save(byte_arr, format="PNG")
-    byte_arr.seek(0)
-    return SimpleUploadedFile("avatar.png", byte_arr.read(), content_type="image/png")
-
-
-def create_meeting(**params):
-    default_meeting = {
-        "title": "test_title",
-    }
-    default_meeting.update(**params)
-    return models.Meeting.objects.create(**default_meeting)
 
 
 class ModelTests(TestCase):
@@ -51,7 +18,7 @@ class ModelTests(TestCase):
         email = "test@example.com"
         password = "Test123"
 
-        user = create_user(email=email, password=password)
+        user = utils.create_user(email=email, password=password)
 
         self.assertEqual(user.email, email)
         self.assertTrue(user.check_password(password))
@@ -64,7 +31,7 @@ class ModelTests(TestCase):
             ["Test3@example.COM", "Test3@example.com"],
         ]
         for idx, (email, expected) in enumerate(sample_emails):
-            user = create_user(
+            user = utils.create_user(
                 email=email,
                 password="Test123",
                 name=f"User{idx}",
@@ -74,12 +41,12 @@ class ModelTests(TestCase):
     def test_new_user_without_email_raise_error(self):
         """Test raises ValueError when creating user without email."""
         with self.assertRaises(ValueError):
-            create_user(email="")
+            utils.create_user(email="")
 
     def test_new_user_without_name_raise_error(self):
         """Test raises ValueError when creating user without email."""
         with self.assertRaises(ValueError):
-            create_user(name="")
+            utils.create_user(name="")
 
     def test_create_superuser(self):
         """Test creating a superuser successful."""
@@ -103,7 +70,23 @@ class ModelTests(TestCase):
 
     def test_create_meeting(self):
         """Test creating meeting successful."""
-        organizer = create_user()
-        meeting = create_meeting(organizer=organizer)
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
 
         self.assertEqual(str(meeting), f"{meeting.title} by {organizer.name}")
+
+    def test_create_meeting_participant(self):
+        """Test creating meeting participant successful."""
+        user = utils.create_user(email="user@example.com", name="test_user")
+        organizer = utils.create_user(
+            email="organizer@example.com", name="test_organizer"
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+        meeting_participant = utils.create_meeting_participant(
+            meeting=meeting, user=user
+        )
+
+        self.assertEqual(
+            str(meeting_participant),
+            f"{meeting_participant.user} in {meeting_participant.meeting}",
+        )
