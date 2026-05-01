@@ -1,8 +1,10 @@
 import io
+from datetime import timedelta
 
 from core import models
 from django.contrib.auth import get_user_model
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.utils import timezone
 from PIL import Image
 
 
@@ -39,3 +41,14 @@ def create_meeting(**params):
 def create_meeting_participant(**params):
     """Create and return a new meeting participant."""
     return models.MeetingParticipant.objects.create(**params)
+
+
+def create_time_slot_proposal(**params):
+    """Create and return a new time slot proposal."""
+    start_at = timezone.now()
+    default_time_slot_proposal = {
+        "start_at": start_at,
+        "end_at": start_at + timedelta(hours=1),
+    }
+    default_time_slot_proposal.update(**params)
+    return models.TimeSlotProposal.objects.create(**default_time_slot_proposal)

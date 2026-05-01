@@ -2,6 +2,7 @@
 Tests for models.
 """
 
+from datetime import timedelta
 from unittest.mock import patch
 
 from core import models
@@ -9,6 +10,7 @@ from core.tests import utils
 from django.contrib.auth import get_user_model
 from django.db import IntegrityError
 from django.test import TestCase
+from django.utils import timezone
 
 
 class ModelTests(TestCase):
@@ -102,3 +104,32 @@ class ModelTests(TestCase):
         utils.create_meeting_participant(meeting=meeting, user=user)
         with self.assertRaises(IntegrityError):
             utils.create_meeting_participant(meeting=meeting, user=user)
+
+    def test_create_time_slot_proposal(self):
+        """Test creating time slot proposal successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        time_slot_proposal = utils.create_time_slot_proposal(
+            meeting=meeting,
+            proposed_by=organizer,
+        )
+        self.assertEqual(
+            str(time_slot_proposal),
+            f"{time_slot_proposal.meeting} from "
+            f"{time_slot_proposal.start_at} to {time_slot_proposal.end_at}",
+        )
+
+    def test_create_time_slot_proposal_start_after_end_error(self):
+        """Test creating time slot proposal with start_at after end_at raises error."""
+        organizer = utils.create_user()
+        end_at = timezone.now()
+        start_at = end_at + timedelta(hours=1)
+        meeting = utils.create_meeting(organizer=organizer)
+
+        with self.assertRaises(IntegrityError):
+            utils.create_time_slot_proposal(
+                meeting=meeting,
+                proposed_by=organizer,
+                start_at=start_at,
+                end_at=end_at,
+            )

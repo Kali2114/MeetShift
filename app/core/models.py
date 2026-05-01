@@ -110,3 +110,29 @@ class MeetingParticipant(models.Model):
 
     def __str__(self):
         return f"{self.user} in {self.meeting}"
+
+
+class TimeSlotProposal(models.Model):
+    """Model for time slot proposal object."""
+
+    meeting = models.ForeignKey(
+        "Meeting", on_delete=models.CASCADE, related_name="time_slot_proposals"
+    )
+    proposed_by = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="time_slot_proposals"
+    )
+    start_at = models.DateTimeField()
+    end_at = models.DateTimeField()
+    is_final = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.meeting} from {self.start_at} to {self.end_at}"
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                check=models.Q(start_at__lt=models.F("end_at")),
+                name="time_slot_start_before_end",
+            )
+        ]

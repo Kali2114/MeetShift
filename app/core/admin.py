@@ -49,5 +49,6 @@ class UserAdmin(BaseUserAdmin):
 
 
 admin.site.register(models.User, UserAdmin)
-admin.site.register(models.Meeting, UserAdmin)
-admin.site.register(models.MeetingParticipant, UserAdmin)
+admin.site.register(models.Meeting)
+admin.site.register(models.MeetingParticipant)
+admin.site.register(models.TimeSlotProposal)
