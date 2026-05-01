@@ -1,0 +1,7 @@
+<h1>Meetings</h1>
+
+{% for meeting in meetings %}
+    <p>{{ meeting.title }}</p>
+{% empty %}
+    <p>No meetings found.</p>
+{% endfor %}
