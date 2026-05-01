@@ -7,6 +7,7 @@ from unittest.mock import patch
 from core import models
 from core.tests import utils
 from django.contrib.auth import get_user_model
+from django.db import IntegrityError
 from django.test import TestCase
 
 
@@ -90,3 +91,14 @@ class ModelTests(TestCase):
             str(meeting_participant),
             f"{meeting_participant.user} in {meeting_participant.meeting}",
         )
+
+    def test_added_the_same_user_twice_times_error(self):
+        """Test adding the same user twice times raise error."""
+        user = utils.create_user(email="user@example.com", name="test_user")
+        organizer = utils.create_user(
+            email="organizer@example.com", name="test_organizer"
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+        utils.create_meeting_participant(meeting=meeting, user=user)
+        with self.assertRaises(IntegrityError):
+            utils.create_meeting_participant(meeting=meeting, user=user)

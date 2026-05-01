@@ -90,14 +90,23 @@ class MeetingParticipant(models.Model):
     """Model for meeting participant object."""
 
     meeting = models.ForeignKey(
-        "Meeting", on_delete=models.CASCADE, related_name="meeting"
+        "Meeting", on_delete=models.CASCADE, related_name="participants"
     )
-    user = models.ForeignKey("User", on_delete=models.CASCADE, related_name="user")
-    role = models.CharField(max_length=3, choices=enums.ROLE_CHOICES, default="ORG")
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="meeting_participations"
+    )
+    role = models.CharField(max_length=3, choices=enums.ROLE_CHOICES, default="PRT")
     invitation_status = models.CharField(
         max_length=3, choices=enums.INVITATION_CHOICES, default="PND"
     )
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["meeting", "user"], name="unique_meeting_participant"
+            )
+        ]
 
     def __str__(self):
         return f"{self.user} in {self.meeting}"
