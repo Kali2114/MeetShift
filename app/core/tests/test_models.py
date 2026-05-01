@@ -102,6 +102,7 @@ class ModelTests(TestCase):
         )
         meeting = utils.create_meeting(organizer=organizer)
         utils.create_meeting_participant(meeting=meeting, user=user)
+
         with self.assertRaises(IntegrityError):
             utils.create_meeting_participant(meeting=meeting, user=user)
 
@@ -133,3 +134,31 @@ class ModelTests(TestCase):
                 start_at=start_at,
                 end_at=end_at,
             )
+
+    def test_create_time_slot_response(self):
+        """Test creating time slot response successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        time_proposal = utils.create_time_slot_proposal(
+            meeting=meeting, proposed_by=organizer
+        )
+        time_response = utils.create_time_slot_response(
+            proposal=time_proposal, user=organizer
+        )
+
+        self.assertEqual(
+            str(time_response),
+            f"{time_response.response} by {organizer} to {time_proposal}",
+        )
+
+    def test_create_time_slot_response_twice_same_user_error(self):
+        """Test creating time slot response by the same user twice times raise error."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        time_proposal = utils.create_time_slot_proposal(
+            meeting=meeting, proposed_by=organizer
+        )
+        utils.create_time_slot_response(proposal=time_proposal, user=organizer)
+
+        with self.assertRaises(IntegrityError):
+            utils.create_time_slot_response(proposal=time_proposal, user=organizer)

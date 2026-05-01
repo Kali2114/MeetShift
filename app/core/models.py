@@ -126,9 +126,6 @@ class TimeSlotProposal(models.Model):
     is_final = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self):
-        return f"{self.meeting} from {self.start_at} to {self.end_at}"
-
     class Meta:
         constraints = [
             models.CheckConstraint(
@@ -136,3 +133,29 @@ class TimeSlotProposal(models.Model):
                 name="time_slot_start_before_end",
             )
         ]
+
+    def __str__(self):
+        return f"{self.meeting} from {self.start_at} to {self.end_at}"
+
+
+class TimeSlotResponse(models.Model):
+    proposal = models.ForeignKey(
+        "TimeSlotProposal", on_delete=models.CASCADE, related_name="responses"
+    )
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="time_slot_responses"
+    )
+    response = models.CharField(
+        max_length=3, choices=enums.RESPONSE_CHOICES, default="MAY"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["proposal", "user"], name="unique_time_slot_response"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.response} by {self.user} to {self.proposal}"

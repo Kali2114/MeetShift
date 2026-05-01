@@ -52,3 +52,8 @@ def create_time_slot_proposal(**params):
     }
     default_time_slot_proposal.update(**params)
     return models.TimeSlotProposal.objects.create(**default_time_slot_proposal)
+
+
+def create_time_slot_response(**params):
+    """Create and return a new time slot response."""
+    return models.TimeSlotResponse.objects.create(**params)
