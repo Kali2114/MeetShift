@@ -4,12 +4,12 @@ Views for meeting app.
 
 from core.models import Meeting
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.db.models import Q
-from django.views.generic import ListView
+from django.views.generic import DetailView, ListView
+from meeting.utils import user_meetings_queryset
 
 
 class MeetingListView(LoginRequiredMixin, ListView):
-    """List meetings participates by logged-in user"""
+    """List meetings participates by logged-in user."""
 
     model = Meeting
     template_name = "meeting/meeting.html"
@@ -17,7 +17,16 @@ class MeetingListView(LoginRequiredMixin, ListView):
 
     def get_queryset(self):
         """Return meetings participates by current user."""
-        queryset = Meeting.objects.filter(
-            Q(organizer=self.request.user) | Q(participants__user=self.request.user)
-        ).distinct()
-        return queryset
+        return user_meetings_queryset(self.request.user)
+
+
+class MeetingDetailView(LoginRequiredMixin, DetailView):
+    """Detail meeting view for logged-in user."""
+
+    model = Meeting
+    template_name = "meeting/meeting_details.html"
+    context_object_name = "meeting"
+
+    def get_queryset(self):
+        """Return meeting detail by current user"""
+        return user_meetings_queryset(self.request.user)

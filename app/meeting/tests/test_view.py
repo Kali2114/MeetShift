@@ -11,6 +11,10 @@ from django.urls import reverse
 MEETING_LIST_URL = reverse("meeting:list")
 
 
+def get_meeting_detail_url(meeting_id):
+    return reverse("meeting:meeting-detail", args=[meeting_id])
+
+
 class PublicMeetingViewsTests(TestCase):
     """Test unauthenticated view request."""
 
@@ -61,3 +65,52 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertContains(res, organized_meeting.title)
         self.assertContains(res, participant_meeting.title)
         self.assertNotContains(res, other_meeting.title)
+        self.assertTemplateUsed(res, "meeting/meeting.html")
+
+    def test_organizer_can_view_meeting_detail(self):
+        """Test organizer can view meeting detail."""
+        meeting = utils.create_meeting(organizer=self.user)
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, 200)
+        self.assertTemplateUsed(res, "meeting/meeting_details.html")
+        self.assertEqual(res.context["meeting"], meeting)
+
+    def test_participant_can_view_meeting_detail(self):
+        """Test participant can view meeting detail."""
+        organizer = utils.create_user(
+            email="organizer@example.com",
+            name="organizer",
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+
+        utils.create_meeting_participant(
+            meeting=meeting,
+            user=self.user,
+        )
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertEqual(res.context["meeting"], meeting)
+
+    def test_other_user_cannot_view_meeting_detail(self):
+        """Test user cannot view meeting they do not participate in."""
+
+        other_user = utils.create_user(
+            email="other@example.com",
+            name="other",
+        )
+        meeting = utils.create_meeting(organizer=self.user)
+
+        self.client.force_login(other_user)
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, 404)
+
+    def test_non_existing_meeting_returns_404(self):
+        """Test non-existing meeting detail returns 404."""
+        res = self.client.get(get_meeting_detail_url(999))
+
+        self.assertEqual(res.status_code, 404)

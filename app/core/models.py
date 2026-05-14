@@ -139,6 +139,8 @@ class TimeSlotProposal(models.Model):
 
 
 class TimeSlotResponse(models.Model):
+    """Moedel for time slot response object."""
+
     proposal = models.ForeignKey(
         "TimeSlotProposal", on_delete=models.CASCADE, related_name="responses"
     )
