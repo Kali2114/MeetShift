@@ -4,11 +4,13 @@ Tests for meeting views.
 
 from http import HTTPStatus
 
+from core.models import Meeting
 from core.tests import utils
 from django.test import Client, TestCase
 from django.urls import reverse
 
 MEETING_LIST_URL = reverse("meeting:list")
+MEETING_CREATE_URL = reverse("meeting:create-meeting")
 
 
 def get_meeting_detail_url(meeting_id):
@@ -114,3 +116,16 @@ class PrivateMeetingViewsTests(TestCase):
         res = self.client.get(get_meeting_detail_url(999))
 
         self.assertEqual(res.status_code, 404)
+
+    def test_create_view(self):
+        """Test create view successful."""
+        payload = {
+            "title": "test_title",
+            "description": "test_description",
+        }
+        res = self.client.post(MEETING_CREATE_URL, payload)
+
+        meeting = Meeting.objects.get(title=payload["title"])
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertEqual(meeting.description, payload["description"])
+        self.assertEqual(meeting.organizer, self.user)

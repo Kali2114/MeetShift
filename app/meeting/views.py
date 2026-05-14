@@ -4,7 +4,8 @@ Views for meeting app.
 
 from core.models import Meeting
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.views.generic import DetailView, ListView
+from django.urls import reverse_lazy
+from django.views.generic import CreateView, DetailView, ListView
 from meeting.utils import user_meetings_queryset
 
 
@@ -30,3 +31,17 @@ class MeetingDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         """Return meeting detail by current user"""
         return user_meetings_queryset(self.request.user)
+
+
+class CreateMeetingView(LoginRequiredMixin, CreateView):
+    """Create meeting view."""
+
+    model = Meeting
+    fields = ["title", "description"]
+    template_name = "meeting/meeting_form.html"
+    success_url = reverse_lazy("meeting:list")
+
+    def form_valid(self, form):
+        """Set organizer as current user."""
+        form.instance.organizer = self.request.user
+        return super().form_valid(form)

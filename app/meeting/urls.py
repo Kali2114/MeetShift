@@ -13,4 +13,9 @@ urlpatterns = [
     path(
         "meetings/<int:pk>/", views.MeetingDetailView.as_view(), name="meeting-detail"
     ),
+    path(
+        "meeting_form/",
+        views.CreateMeetingView.as_view(),
+        name="create-meeting",
+    ),
 ]
