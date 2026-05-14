@@ -14,7 +14,13 @@ MEETING_CREATE_URL = reverse("meeting:create-meeting")
 
 
 def get_meeting_detail_url(meeting_id):
-    return reverse("meeting:meeting-detail", args=[meeting_id])
+    """Return meeting detail url."""
+    return reverse("meeting:detail-meeting", args=[meeting_id])
+
+
+def get_meeting_edit_url(meeting_id):
+    """Return meeting patch url."""
+    return reverse("meeting:edit-meeting", args=[meeting_id])
 
 
 class PublicMeetingViewsTests(TestCase):
@@ -129,3 +135,48 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(meeting.description, payload["description"])
         self.assertEqual(meeting.organizer, self.user)
+
+    def test_edit_meeting_by_organizer(self):
+        """Test edit meeting by organizer successful."""
+        meeting = utils.create_meeting(organizer=self.user)
+        payload = {
+            "title": "new_title",
+            "description": "new_description",
+        }
+        res = self.client.post(get_meeting_edit_url(meeting.id), payload)
+        meeting.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertEqual(meeting.title, payload["title"])
+        self.assertEqual(meeting.description, payload["description"])
+
+    def test_edit_meeting_by_participant(self):
+        """Test edit meeting by participant fail."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        utils.create_meeting_participant(meeting=meeting, user=self.user)
+        payload = {
+            "title": "new_title",
+            "description": "new_description",
+        }
+        res = self.client.post(get_meeting_edit_url(meeting.id), payload)
+
+        meeting.refresh_from_db()
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertNotEqual(meeting.title, payload["title"])
+        self.assertNotEqual(meeting.description, payload["description"])
+
+    def test_edit_meeting_by_another_user(self):
+        """Test edit meeting by another user fail."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        payload = {
+            "title": "new_title",
+            "description": "new_description",
+        }
+        res = self.client.post(get_meeting_edit_url(meeting.id), payload)
+
+        meeting.refresh_from_db()
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertNotEqual(meeting.title, payload["title"])
+        self.assertNotEqual(meeting.description, payload["description"])
