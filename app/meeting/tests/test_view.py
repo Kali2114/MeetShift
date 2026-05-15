@@ -77,7 +77,7 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertContains(res, organized_meeting.title)
         self.assertContains(res, participant_meeting.title)
         self.assertNotContains(res, other_meeting.title)
-        self.assertTemplateUsed(res, "meeting/meeting.html")
+        self.assertTemplateUsed(res, "meeting/meeting_list.html")
 
     def test_organizer_can_view_meeting_detail(self):
         """Test organizer can view meeting detail."""

@@ -12,6 +12,7 @@ from django.views.generic import (
     ListView,
     UpdateView,
 )
+from meeting.forms import MeetingForm
 from meeting.utils import user_meetings_queryset
 
 
@@ -19,7 +20,7 @@ class MeetingListView(LoginRequiredMixin, ListView):
     """List meetings participates by logged-in user."""
 
     model = Meeting
-    template_name = "meeting/meeting.html"
+    template_name = "meeting/meeting_list.html"
     context_object_name = "meetings"
 
     def get_queryset(self):
@@ -43,7 +44,7 @@ class CreateMeetingView(LoginRequiredMixin, CreateView):
     """Create meeting view."""
 
     model = Meeting
-    fields = ["title", "description"]
+    form_class = MeetingForm
     template_name = "meeting/meeting_form.html"
     success_url = reverse_lazy("meeting:list")
 
@@ -57,7 +58,7 @@ class EditMeetingView(LoginRequiredMixin, UpdateView):
     """Edit meeting view."""
 
     model = Meeting
-    fields = ["title", "description"]
+    form_class = MeetingForm
     template_name = "meeting/meeting_form.html"
 
     def get_queryset(self):
