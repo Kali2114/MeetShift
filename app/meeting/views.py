@@ -5,7 +5,13 @@ Views for meeting app.
 from core.models import Meeting
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse, reverse_lazy
-from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    ListView,
+    UpdateView,
+)
 from meeting.utils import user_meetings_queryset
 
 
@@ -60,3 +66,14 @@ class EditMeetingView(LoginRequiredMixin, UpdateView):
 
     def get_success_url(self):
         return reverse("meeting:detail-meeting", args=[self.object.id])
+
+
+class DeleteMeetingView(LoginRequiredMixin, DeleteView):
+    """Delete meeting view."""
+
+    model = Meeting
+    success_url = reverse_lazy("meeting:list")
+
+    def get_queryset(self):
+        """Return only meetings organized by current user."""
+        return Meeting.objects.filter(organizer=self.request.user)

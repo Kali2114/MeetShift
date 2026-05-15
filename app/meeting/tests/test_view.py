@@ -23,6 +23,10 @@ def get_meeting_edit_url(meeting_id):
     return reverse("meeting:edit-meeting", args=[meeting_id])
 
 
+def get_meeting_delete_url(meeting_id):
+    return reverse("meeting:delete-meeting", args=[meeting_id])
+
+
 class PublicMeetingViewsTests(TestCase):
     """Test unauthenticated view request."""
 
@@ -180,3 +184,33 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         self.assertNotEqual(meeting.title, payload["title"])
         self.assertNotEqual(meeting.description, payload["description"])
+
+    def test_delete_meeting_by_organizer(self):
+        """Test delete meeting by organizer successful."""
+        meeting = utils.create_meeting(organizer=self.user)
+        res = self.client.post(get_meeting_delete_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        meeting_exist = Meeting.objects.filter(id=meeting.id).exists()
+        self.assertFalse(meeting_exist)
+
+    def test_delete_meeting_by_participant(self):
+        """Test delete meeting by participant fail."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        utils.create_meeting_participant(meeting=meeting, user=self.user)
+        res = self.client.post(get_meeting_delete_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        meeting_exist = Meeting.objects.filter(id=meeting.id).exists()
+        self.assertTrue(meeting_exist)
+
+    def test_delete_meeting_by_another_user(self):
+        """Test delete meeting by another user fail."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        res = self.client.post(get_meeting_delete_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        meeting_exist = Meeting.objects.filter(id=meeting.id).exists()
+        self.assertTrue(meeting_exist)

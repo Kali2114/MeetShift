@@ -21,4 +21,9 @@ urlpatterns = [
     path(
         "meeting_edit/<int:pk>/", views.EditMeetingView.as_view(), name="edit-meeting"
     ),
+    path(
+        "meeting_delete/<int:pk>/",
+        views.DeleteMeetingView.as_view(),
+        name="delete-meeting",
+    ),
 ]
