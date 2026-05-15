@@ -73,6 +73,7 @@ class DeleteMeetingView(LoginRequiredMixin, DeleteView):
     """Delete meeting view."""
 
     model = Meeting
+    template_name = "meeting/meeting_confirm_delete.html"
     success_url = reverse_lazy("meeting:list")
 
     def get_queryset(self):
