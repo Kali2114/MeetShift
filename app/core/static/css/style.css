@@ -1,0 +1,148 @@
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f8;
+    color: #1f2937;
+}
+
+.site-header {
+    background: #111827;
+}
+
+.logo-bar {
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 18px 0 8px;
+    text-align: center;
+}
+
+.logo {
+    color: #ffffff;
+    font-size: 28px;
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.navbar {
+    padding: 10px 0 16px;
+}
+
+.nav-container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+}
+
+.nav-links {
+    display: flex;
+    gap: 20px;
+}
+
+.auth-links {
+    margin-left: auto;
+    display: flex;
+    gap: 20px;
+}
+
+.nav-links a,
+.auth-links a {
+    color: #d1d5db;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.nav-links a:hover,
+.auth-links a:hover,
+.logo:hover {
+    color: #ffffff;
+}
+
+.page-container {
+    width: 90%;
+    max-width: 1100px;
+    margin: 40px auto;
+}
+
+.meeting-card,
+form {
+    background: #ffffff;
+    padding: 24px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.meeting-card {
+    margin-bottom: 20px;
+}
+
+.meeting-card h2 {
+    margin-top: 0;
+}
+
+.meeting-card h2 a {
+    color: #111827;
+    text-decoration: none;
+}
+
+.meeting-card h2 a:hover {
+    color: #2563eb;
+}
+
+.meeting-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.meeting-actions a,
+button {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    background: #2563eb;
+    color: #ffffff;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.meeting-actions a:hover,
+button:hover {
+    background: #1d4ed8;
+}
+
+form p {
+    display: grid;
+    grid-template-columns: 100px 1fr;
+    align-items: center;
+    gap: 12px;
+}
+
+input,
+textarea,
+select {
+    width: 100%;
+    max-width: 500px;
+    padding: 10px;
+    margin-top: 6px;
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+}
+
+textarea {
+    min-height: 160px;
+}
+
+.footer {
+    margin-top: 80px;
+    padding: 24px 0;
+    text-align: center;
+    color: #6b7280;
+    font-size: 14px;
+}
