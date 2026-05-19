@@ -9,6 +9,7 @@ from core.tests import utils
 from django.test import Client, TestCase
 from django.urls import reverse
 
+# INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
 MEETING_CREATE_URL = reverse("meeting:create-meeting")
 
@@ -24,6 +25,7 @@ def get_meeting_edit_url(meeting_id):
 
 
 def get_meeting_delete_url(meeting_id):
+    """Return meeting delete url."""
     return reverse("meeting:delete-meeting", args=[meeting_id])
 
 
@@ -39,6 +41,12 @@ class PublicMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
+    # def test_index_auth_required(self):
+    #     """Test auth is required to display index page."""
+    #     res = self.client.get(INDEX_URL)
+    #
+    #     self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
 
 class PrivateMeetingViewsTests(TestCase):
     """Test authenticated view request."""
@@ -48,11 +56,44 @@ class PrivateMeetingViewsTests(TestCase):
         self.user = utils.create_user()
         self.client.force_login(self.user)
 
+    # def test_index_view_successful(self):
+    #     """Test index page is displayed."""
+    #     res = self.client.get(INDEX_URL)
+    #
+    #     self.assertEqual(res.status_code, HTTPStatus.OK)
+    #     self.assertTemplateUsed(res, "index.html")
+
     def test_retrieve_meetings_successful(self):
         """Test retrieving meetings for logged-in user."""
         res = self.client.get(MEETING_LIST_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/meeting_list.html")
+
+    def test_create_meeting_page_successful(self):
+        """Test create meeting page is displayed."""
+        res = self.client.get(MEETING_CREATE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/meeting_form.html")
+
+    def test_edit_meeting_page_successful(self):
+        """Test edit meeting page is displayed."""
+        meeting = utils.create_meeting(organizer=self.user)
+
+        res = self.client.get(get_meeting_edit_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/meeting_form.html")
+
+    def test_delete_meeting_page_successful(self):
+        """Test delete meeting confirmation page is displayed."""
+        meeting = utils.create_meeting(organizer=self.user)
+
+        res = self.client.get(get_meeting_delete_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/meeting_confirm_delete.html")
 
     def test_list_meetings_for_logged_in_user(self):
         """Test list meetings related to logged-in user."""
@@ -85,7 +126,7 @@ class PrivateMeetingViewsTests(TestCase):
 
         res = self.client.get(get_meeting_detail_url(meeting.id))
 
-        self.assertEqual(res.status_code, 200)
+        self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(res, "meeting/meeting_details.html")
         self.assertEqual(res.context["meeting"], meeting)
 
@@ -109,7 +150,6 @@ class PrivateMeetingViewsTests(TestCase):
 
     def test_other_user_cannot_view_meeting_detail(self):
         """Test user cannot view meeting they do not participate in."""
-
         other_user = utils.create_user(
             email="other@example.com",
             name="other",
@@ -119,13 +159,13 @@ class PrivateMeetingViewsTests(TestCase):
         self.client.force_login(other_user)
         res = self.client.get(get_meeting_detail_url(meeting.id))
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
 
     def test_non_existing_meeting_returns_404(self):
         """Test non-existing meeting detail returns 404."""
         res = self.client.get(get_meeting_detail_url(999))
 
-        self.assertEqual(res.status_code, 404)
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
 
     def test_create_view(self):
         """Test create view successful."""
