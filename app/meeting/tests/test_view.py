@@ -9,7 +9,7 @@ from core.tests import utils
 from django.test import Client, TestCase
 from django.urls import reverse
 
-# INDEX_URL = reverse("meeting:index")
+INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
 MEETING_CREATE_URL = reverse("meeting:create-meeting")
 
@@ -41,11 +41,11 @@ class PublicMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
-    # def test_index_auth_required(self):
-    #     """Test auth is required to display index page."""
-    #     res = self.client.get(INDEX_URL)
-    #
-    #     self.assertEqual(res.status_code, HTTPStatus.FOUND)
+    def test_index_auth_required(self):
+        """Test auth is required to display index page."""
+        res = self.client.get(INDEX_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
 
 class PrivateMeetingViewsTests(TestCase):
@@ -56,12 +56,12 @@ class PrivateMeetingViewsTests(TestCase):
         self.user = utils.create_user()
         self.client.force_login(self.user)
 
-    # def test_index_view_successful(self):
-    #     """Test index page is displayed."""
-    #     res = self.client.get(INDEX_URL)
-    #
-    #     self.assertEqual(res.status_code, HTTPStatus.OK)
-    #     self.assertTemplateUsed(res, "index.html")
+    def test_index_view_successful(self):
+        """Test index page is displayed."""
+        res = self.client.get(INDEX_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "index.html")
 
     def test_retrieve_meetings_successful(self):
         """Test retrieving meetings for logged-in user."""
