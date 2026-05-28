@@ -1,5 +1,39 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h1>Dashboard</h1>
+    <section class="dashboard-header">
+        <h1>MeetShift Dashboard</h1>
+        <p>Your meetings calendar overview.</p>
+    </section>
+
+    <section class="calendar-card">
+        <div id="calendar"></div>
+    </section>
+
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const calendarEl = document.getElementById("calendar");
+
+            const calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: "dayGridMonth",
+                height: "auto",
+                events: [
+                    {% for meeting in meetings %}
+                        {% if meeting.started_at %}
+                            {
+                                title: "{{ meeting.title|escapejs }}",
+                                start: "{{ meeting.started_at|date:'c' }}",
+                                url: "{% url 'meeting:detail-meeting' meeting.id %}"
+                            },
+                        {% endif %}
+                    {% endfor %}
+                ]
+            });
+
+            calendar.render();
+        });
+    </script>
 {% endblock %}

@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "user",
     "core",
+    "meeting",
 ]
 
 MIDDLEWARE = [
@@ -85,6 +86,10 @@ DATABASES = {
         "PORT": "5432",
     }
 }
+
+LOGIN_REDIRECT_URL = "meeting:index"
+LOGOUT_REDIRECT_URL = "login"
+LOGIN_URL = "login"
 
 
 # Password validation
