@@ -10,10 +10,17 @@ from django.views.generic import (
     DeleteView,
     DetailView,
     ListView,
+    TemplateView,
     UpdateView,
 )
 from meeting.forms import MeetingForm
 from meeting.utils import user_meetings_queryset
+
+
+class IndexView(LoginRequiredMixin, TemplateView):
+    """Index view for logged-in user."""
+
+    template_name = "index.html"
 
 
 class MeetingListView(LoginRequiredMixin, ListView):

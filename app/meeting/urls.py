@@ -9,6 +9,7 @@ app_name = "meeting"
 
 
 urlpatterns = [
+    path("", views.IndexView.as_view(), name="index"),
     path("meetings/", views.MeetingListView.as_view(), name="list"),
     path(
         "meetings/<int:pk>/", views.MeetingDetailView.as_view(), name="detail-meeting"
