@@ -103,7 +103,31 @@ form {
     margin-top: 16px;
 }
 
-.meeting-actions a,
+.meeting-actions a {
+    border-radius: 8px;
+    padding: 10px 14px;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.meeting-actions a:first-child {
+    background: #e0ecff;
+    color: #1d4ed8;
+}
+
+.meeting-actions a:first-child:hover {
+    background: #bfdbfe;
+}
+
+.meeting-actions a:last-child {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.meeting-actions a:last-child:hover {
+    background: #fecaca;
+}
+
 button {
     border: none;
     border-radius: 8px;
@@ -114,7 +138,6 @@ button {
     cursor: pointer;
 }
 
-.meeting-actions a:hover,
 button:hover {
     background: #1d4ed8;
 }

@@ -20,12 +20,14 @@
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: "dayGridMonth",
                 height: "auto",
+                timeZone: "local",
                 events: [
                     {% for meeting in meetings %}
                         {% if meeting.started_at %}
                             {
                                 title: "{{ meeting.title|escapejs }}",
                                 start: "{{ meeting.started_at|date:'c' }}",
+                                end: "{{ meeting.ended_at|date:'c' }}",
                                 url: "{% url 'meeting:detail-meeting' meeting.id %}"
                             },
                         {% endif %}

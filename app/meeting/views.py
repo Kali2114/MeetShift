@@ -22,6 +22,13 @@ class IndexView(LoginRequiredMixin, TemplateView):
 
     template_name = "index.html"
 
+    def get_context_data(self, **kwargs):
+        """Return meetings for current user."""
+        context = super().get_context_data(**kwargs)
+        context["meetings"] = user_meetings_queryset(self.request.user)
+
+        return context
+
 
 class MeetingListView(LoginRequiredMixin, ListView):
     """List meetings participates by logged-in user."""

@@ -80,6 +80,7 @@ class Meeting(models.Model):
     )
     status = models.CharField(max_length=3, choices=enums.STATUS_CHOICES, default="DRF")
     started_at = models.DateTimeField(blank=True, null=True)
+    ended_at = models.DateTimeField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

@@ -4,7 +4,7 @@
     <h1>Your meetings</h1>
 
     {% for meeting in meetings %}
-        <div>
+        <div class="meeting-card">
             <h2>
                 <a href="{% url 'meeting:detail-meeting' meeting.id %}">
                     {{ meeting.title }}
@@ -12,10 +12,13 @@
             </h2>
 
             <p>{{ meeting.description }}</p>
-            <p>{{ meeting.started_at }}</p>
+            <p>Starting at: {{ meeting.started_at }}</p>
+            <p>Ending at: {{ meeting.ended_at }}</p>
 
-            <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
-            <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+            <div class="meeting-actions">
+                <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
+                <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+            </div>
         </div>
     {% empty %}
         <p>No meetings yet.</p>
