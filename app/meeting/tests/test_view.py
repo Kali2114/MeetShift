@@ -295,7 +295,10 @@ class PrivateMeetingViewsTests(TestCase):
         payload = {"users": [participant.id]}
         res = self.client.post(get_meeting_invite_url(meeting.id), payload)
 
-        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(
+            res, reverse("meeting:detail-meeting", kwargs={"pk": meeting.id})
+        )
         self.assertTrue(meeting.participants.filter(user=participant).exists())
 
     def test_participant_invite_user(self):
