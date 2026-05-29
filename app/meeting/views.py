@@ -2,18 +2,20 @@
 Views for meeting app.
 """
 
-from core.models import Meeting
+from core.models import Meeting, MeetingParticipant
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
+    FormView,
     ListView,
     TemplateView,
     UpdateView,
 )
-from meeting.forms import MeetingForm
+from meeting.forms import InviteParticipantForm, MeetingForm
 from meeting.utils import user_meetings_queryset
 
 
@@ -93,3 +95,35 @@ class DeleteMeetingView(LoginRequiredMixin, DeleteView):
     def get_queryset(self):
         """Return only meetings organized by current user."""
         return Meeting.objects.filter(organizer=self.request.user)
+
+
+class InviteParticipantView(LoginRequiredMixin, FormView):
+    """Invite participant view."""
+
+    template_name = "meeting/invite_participant.html"
+    form_class = InviteParticipantForm
+
+    def dispatch(self, request, *args, **kwargs):
+        """Check meeting exists and current user is organizer"""
+        self.meeting = get_object_or_404(
+            Meeting,
+            id=self.kwargs["pk"],
+            organizer=self.request.user,
+        )
+        return super().dispatch(request, *args, **kwargs)
+
+    def form_valid(self, form):
+        """Invite user to meeting."""
+        participant = form.cleaned_data["user"]
+        MeetingParticipant.objects.create(
+            meeting=self.meeting,
+            user=participant,
+        )
+
+        return redirect("meeting:detail-meeting", pk=self.meeting.id)
+
+    def get_form_kwargs(self):
+        """Pass meeting to invite form."""
+        kwargs = super().get_form_kwargs()
+        kwargs["meeting"] = self.meeting
+        return kwargs

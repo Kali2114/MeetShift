@@ -2,7 +2,7 @@
 Forms for meeting app.
 """
 
-from core.models import Meeting
+from core.models import Meeting, User
 from django import forms
 
 
@@ -27,3 +27,32 @@ class MeetingForm(forms.ModelForm):
             raise forms.ValidationError("End time must be after start time.")
 
         return cleaned_data
+
+
+class InviteParticipantForm(forms.Form):
+    """Form for invite participants."""
+
+    email = forms.EmailField()
+
+    def __init__(self, *args, **kwargs):
+        """Initialize form with meeting."""
+        self.meeting = kwargs.pop("meeting")
+        super().__init__(*args, **kwargs)
+
+    def clean_email(self):
+        """Validate invited user email."""
+        email = self.cleaned_data["email"]
+
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            raise forms.ValidationError("User does not exist.")
+
+        if user == self.meeting.organizer:
+            raise forms.ValidationError("You cannot invite yourself.")
+
+        if self.meeting.participants.filter(user=user).exists():
+            raise forms.ValidationError("You are already invited.")
+
+        self.cleaned_data["user"] = user
+        return email

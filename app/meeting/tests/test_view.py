@@ -29,6 +29,11 @@ def get_meeting_delete_url(meeting_id):
     return reverse("meeting:delete-meeting", args=[meeting_id])
 
 
+def get_meeting_invite_url(meeting_id):
+    """Return meeting invite url."""
+    return reverse("meeting:invite-participant", args=[meeting_id])
+
+
 class PublicMeetingViewsTests(TestCase):
     """Test unauthenticated view request."""
 
@@ -254,3 +259,85 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         meeting_exist = Meeting.objects.filter(id=meeting.id).exists()
         self.assertTrue(meeting_exist)
+
+    def test_organizer_display_invite_page(self):
+        """Test organizer display invite page successful."""
+        meeting = utils.create_meeting(organizer=self.user)
+        res = self.client.get(get_meeting_invite_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/invite_participant.html")
+
+    def test_participant_display_invite_page(self):
+        """Test participant display invite page failed."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        utils.create_meeting_participant(meeting=meeting, user=self.user)
+        res = self.client.get(get_meeting_invite_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_another_user_display_invite_page(self):
+        """Test another user display invite page failed."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        res = self.client.get(get_meeting_invite_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_organizer_invite_user(self):
+        """Test organizer invite user successful."""
+        participant = utils.create_user(
+            name="participant", email="participant@example.com"
+        )
+        meeting = utils.create_meeting(organizer=self.user)
+        payload = {"email": participant.email}
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(meeting.participants.filter(user=participant).exists())
+
+    def test_participant_invite_user(self):
+        """Test participant invite user failed."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        another_user = utils.create_user(
+            name="another_user", email="another@example.com"
+        )
+        utils.create_meeting_participant(meeting=meeting, user=self.user)
+        payload = {"email": another_user.email}
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(meeting.participants.filter(user=another_user).exists())
+
+    def test_another_user_invite_user(self):
+        """Test another user invite user failed."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        payload = {"email": self.user.email}
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(meeting.participants.filter(user=self.user).exists())
+
+    def test_invite_self_user(self):
+        """Test invite self user failed."""
+        meeting = utils.create_meeting(organizer=self.user)
+        payload = {"email": self.user.email}
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+
+    def test_invite_same_user_twice(self):
+        """Test invite same user twice failed."""
+        meeting = utils.create_meeting(organizer=self.user)
+        participant = utils.create_user(
+            name="participant", email="participant@example.com"
+        )
+        utils.create_meeting_participant(meeting=meeting, user=participant)
+        payload = {"email": participant.email}
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertEqual(meeting.participants.filter(user=participant).count(), 1)
