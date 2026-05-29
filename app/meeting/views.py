@@ -62,12 +62,15 @@ class CreateMeetingView(LoginRequiredMixin, CreateView):
     model = Meeting
     form_class = MeetingForm
     template_name = "meeting/meeting_form.html"
-    success_url = reverse_lazy("meeting:list")
 
     def form_valid(self, form):
         """Set organizer as current user."""
         form.instance.organizer = self.request.user
         return super().form_valid(form)
+
+    def get_success_url(self):
+        """Return invite participant after creating meeting."""
+        return reverse("meeting:invite-participant", args=[self.object.id])
 
 
 class EditMeetingView(LoginRequiredMixin, UpdateView):

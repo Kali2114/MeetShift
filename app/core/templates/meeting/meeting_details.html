@@ -5,5 +5,8 @@
 <h1>{{ meeting.title }}</h1>
 <p>{{ meeting.description }}</p>
 <p>{{ meeting.organizer.name }}</p>
+{%  if meeting.organizer == user %}
+    <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
+{% endif %}
 
 {% endblock %}
