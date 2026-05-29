@@ -32,14 +32,17 @@ class MeetingForm(forms.ModelForm):
 class InviteParticipantForm(forms.Form):
     """Form for invite participants."""
 
-    user = forms.ModelChoiceField(queryset=User.objects.none())
+    users = forms.ModelMultipleChoiceField(
+        queryset=User.objects.none(),
+        widget=forms.CheckboxSelectMultiple,
+    )
 
     def __init__(self, *args, **kwargs):
         """Initialize form with meeting."""
         self.meeting = kwargs.pop("meeting")
         super().__init__(*args, **kwargs)
 
-        self.fields["user"].queryset = User.objects.exclude(
+        self.fields["users"].queryset = User.objects.exclude(
             id=self.meeting.organizer.id
         ).exclude(meeting_participations__meeting=self.meeting)
 

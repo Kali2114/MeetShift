@@ -16,11 +16,12 @@
             <p>Ending at: {{ meeting.ended_at }}</p>
 
             {% if meeting.organizer == user %}
-            <div class="meeting-actions">
-                <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
-                <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+                <div class="meeting-actions">
+                    <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
+                    <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+                    <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
+                </div>
             {% endif %}
-            </div>
         </div>
     {% empty %}
         <p>No meetings yet.</p>

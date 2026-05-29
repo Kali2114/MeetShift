@@ -117,11 +117,11 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         """Invite user to meeting."""
-        participant = form.cleaned_data["user"]
-        MeetingParticipant.objects.create(
-            meeting=self.meeting,
-            user=participant,
-        )
+        for user in form.cleaned_data["users"]:
+            MeetingParticipant.objects.create(
+                meeting=self.meeting,
+                user=user,
+            )
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
 

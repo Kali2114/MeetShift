@@ -73,12 +73,12 @@ class InviteParticipantFormTests(TestCase):
         meeting = utils.create_meeting(organizer=organizer)
 
         form = InviteParticipantForm(
-            data={"email": participant.email},
+            data={"users": [participant.id]},
             meeting=meeting,
         )
 
         self.assertTrue(form.is_valid())
-        self.assertEqual(form.cleaned_data["user"], participant)
+        self.assertIn(participant, form.cleaned_data["users"])
 
     def test_invite_non_existing_user_invalid(self):
         """Test invite form is invalid for non-existing user."""

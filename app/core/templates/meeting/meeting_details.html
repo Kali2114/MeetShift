@@ -5,14 +5,20 @@
 <h1>{{ meeting.title }}</h1>
 <p>{{ meeting.description }}</p>
 <p>{{ meeting.organizer.name }}</p>
+
 {% for participant in meeting.participants.all %}
     <p>{{ participant.user.name }} - {{ participant.get_invitation_status_display }}</p>
     <p>{{ participant.user.email }}</p>
 {% empty %}
     <p>No participants invited yet</p>
 {% endfor %}
-{%  if meeting.organizer == user %}
-    <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
+
+{% if meeting.organizer == user %}
+    <div class="meeting-actions">
+        <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
+        <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
+        <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+    </div>
 {% endif %}
 
 {% endblock %}
