@@ -184,10 +184,7 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(meeting.description, payload["description"])
         self.assertEqual(meeting.organizer, self.user)
-        self.assertRedirects(
-            res,
-            get_meeting_invite_url(meeting.id)
-        )
+        self.assertRedirects(res, get_meeting_invite_url(meeting.id))
 
     def test_edit_meeting_by_organizer(self):
         """Test edit meeting by organizer successful."""
