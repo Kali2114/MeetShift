@@ -32,12 +32,16 @@ class MeetingForm(forms.ModelForm):
 class InviteParticipantForm(forms.Form):
     """Form for invite participants."""
 
-    email = forms.EmailField()
+    user = forms.ModelChoiceField(queryset=User.objects.none())
 
     def __init__(self, *args, **kwargs):
         """Initialize form with meeting."""
         self.meeting = kwargs.pop("meeting")
         super().__init__(*args, **kwargs)
+
+        self.fields["user"].queryset = User.objects.exclude(
+            id=self.meeting.organizer.id
+        ).exclude(meeting_participations__meeting=self.meeting)
 
     def clean_email(self):
         """Validate invited user email."""
