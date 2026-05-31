@@ -2,12 +2,15 @@
 Tests for meeting views.
 """
 
+from datetime import timedelta
 from http import HTTPStatus
 
 from core.models import Meeting
 from core.tests import utils
+from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
@@ -60,6 +63,12 @@ class PublicMeetingViewsTests(TestCase):
     def test_index_auth_required(self):
         """Test auth is required to display index page."""
         res = self.client.get(INDEX_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_invitations_auth_required(self):
+        """Test auth is required to display invitations."""
+        res = self.client.get(INVITATIONS_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
@@ -373,7 +382,13 @@ class PrivateMeetingViewsTests(TestCase):
 
     def test_participant_accept_invite(self):
         """Test participant can accept invitation."""
-        meeting = utils.create_meeting(organizer=self.organizer)
+        start = timezone.now()
+        end = start + timedelta(hours=1)
+        meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=start,
+            ended_at=end,
+        )
         invitation = utils.create_meeting_participant(meeting=meeting, user=self.user)
         res = self.client.post(get_accept_invitation_url(invitation.id))
 
@@ -418,3 +433,86 @@ class PrivateMeetingViewsTests(TestCase):
         invitation.refresh_from_db()
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         self.assertNotEqual(invitation.invitation_status, "DEC")
+
+    def test_invitations_page_successful(self):
+        """Test invitations page is displayed."""
+        res = self.client.get(INVITATIONS_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "invitations/invitations.html")
+
+    def test_cannot_accept_conflicting_meeting(self):
+        """Test user cannot accept meeting with time conflict."""
+        start = timezone.now()
+        end = start + timedelta(hours=1)
+
+        accepted_meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=start,
+            ended_at=end,
+        )
+        accepted_invitation = utils.create_meeting_participant(
+            meeting=accepted_meeting,
+            user=self.user,
+            invitation_status="ACC",
+        )
+
+        conflicting_meeting = utils.create_meeting(
+            organizer=self.participant,
+            started_at=start + timedelta(minutes=30),
+            ended_at=end + timedelta(minutes=30),
+        )
+        conflicting_invitation = utils.create_meeting_participant(
+            meeting=conflicting_meeting,
+            user=self.user,
+        )
+
+        res = self.client.post(get_accept_invitation_url(conflicting_invitation.id))
+
+        messages = list(get_messages(res.wsgi_request))
+
+        self.assertEqual(messages[0].tags, "error")
+        self.assertEqual(
+            str(messages[0]),
+            "You already have another accepted meeting at this time.",
+        )
+
+        conflicting_invitation.refresh_from_db()
+        accepted_invitation.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertEqual(conflicting_invitation.invitation_status, "PND")
+        self.assertEqual(accepted_invitation.invitation_status, "ACC")
+
+    def test_can_accept_non_conflicting_meeting(self):
+        """Test user can accept meeting without time conflict."""
+        start = timezone.now()
+        end = start + timedelta(hours=1)
+
+        accepted_meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=start,
+            ended_at=end,
+        )
+        utils.create_meeting_participant(
+            meeting=accepted_meeting,
+            user=self.user,
+            invitation_status="ACC",
+        )
+
+        non_conflicting_meeting = utils.create_meeting(
+            organizer=self.participant,
+            started_at=end + timedelta(hours=1),
+            ended_at=end + timedelta(hours=2),
+        )
+        non_conflicting_invitation = utils.create_meeting_participant(
+            meeting=non_conflicting_meeting,
+            user=self.user,
+        )
+
+        res = self.client.post(get_accept_invitation_url(non_conflicting_invitation.id))
+
+        non_conflicting_invitation.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertEqual(non_conflicting_invitation.invitation_status, "ACC")

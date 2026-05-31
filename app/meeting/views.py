@@ -3,6 +3,7 @@ Views for meeting app.
 """
 
 from core.models import Meeting, MeetingParticipant
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
@@ -17,7 +18,7 @@ from django.views.generic import (
     View,
 )
 from meeting.forms import InviteParticipantForm, MeetingForm
-from meeting.utils import user_meetings_queryset
+from meeting.utils import user_has_meeting_conflict, user_meetings_queryset
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
@@ -143,6 +144,11 @@ class AcceptInvitationView(LoginRequiredMixin, View):
             id=self.kwargs["pk"],
             user=request.user,
         )
+        if user_has_meeting_conflict(request.user, invitation.meeting):
+            messages.error(
+                request, "You already have another accepted meeting at this time."
+            )
+            return redirect(request.POST.get("next", "meeting:invitations"))
         invitation.invitation_status = "ACC"
         invitation.save()
 
