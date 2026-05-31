@@ -19,6 +19,7 @@
 
                     {% if user.is_authenticated %}
                         <a href="{% url 'meeting:create-meeting' %}">Create</a>
+                        <a href="{% url 'meeting:invitations' %}">Invitations</a>
                     {% endif %}
                 </nav>
 

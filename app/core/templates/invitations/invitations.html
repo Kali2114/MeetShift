@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Your invitations</h1>
+
+    {% for invitation in invitations %}
+        <div class="meeting-card">
+            <h2>
+                <a href="{% url 'meeting:detail-meeting' invitation.meeting.id %}">
+                    {{ invitation.meeting.title }}
+                </a>
+            </h2>
+
+            <p>{{ invitation.meeting.description }}</p>
+            <p>Organizer: {{ invitation.meeting.organizer.name }}</p>
+            <p>Status: {{ invitation.get_invitation_status_display }}</p>
+
+            {% if invitation.invitation_status == "PND" %}
+                <div class="meeting-actions">
+                    <form action="{% url 'meeting:accept-invitation' invitation.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit">Accept</button>
+                    </form>
+
+                    <form action="{% url 'meeting:decline-invitation' invitation.id %}" method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit">Decline</button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    {% empty %}
+        <p>No invitations yet.</p>
+    {% endfor %}
+{% endblock %}

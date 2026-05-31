@@ -14,6 +14,7 @@ from django.views.generic import (
     ListView,
     TemplateView,
     UpdateView,
+    View,
 )
 from meeting.forms import InviteParticipantForm, MeetingForm
 from meeting.utils import user_meetings_queryset
@@ -107,7 +108,7 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
     form_class = InviteParticipantForm
 
     def dispatch(self, request, *args, **kwargs):
-        """Check meeting exists and current user is organizer"""
+        """Check meeting exists and current user is organizer."""
         self.meeting = get_object_or_404(
             Meeting,
             id=self.kwargs["pk"],
@@ -130,3 +131,47 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
         kwargs = super().get_form_kwargs()
         kwargs["meeting"] = self.meeting
         return kwargs
+
+
+class AcceptInvitationView(LoginRequiredMixin, View):
+    """Accept invitation view."""
+
+    def post(self, request, *args, **kwargs):
+        """Accept current user invitation."""
+        invitation = get_object_or_404(
+            MeetingParticipant,
+            id=self.kwargs["pk"],
+            user=request.user,
+        )
+        invitation.invitation_status = "ACC"
+        invitation.save()
+
+        return redirect(request.POST.get("next", "meeting:invitations"))
+
+
+class DeclineInvitationView(LoginRequiredMixin, View):
+    """Decline invitation view."""
+
+    def post(self, request, *args, **kwargs):
+        """Decline current user invitation."""
+        invitation = get_object_or_404(
+            MeetingParticipant,
+            id=self.kwargs["pk"],
+            user=request.user,
+        )
+        invitation.invitation_status = "DEC"
+        invitation.save()
+
+        return redirect(request.POST.get("next", "meeting:invitations"))
+
+
+class InvitationListView(LoginRequiredMixin, ListView):
+    """List current user invitations."""
+
+    model = MeetingParticipant
+    template_name = "invitations/invitations.html"
+    context_object_name = "invitations"
+
+    def get_queryset(self):
+        """Return current user invitations."""
+        return MeetingParticipant.objects.filter(user=self.request.user)

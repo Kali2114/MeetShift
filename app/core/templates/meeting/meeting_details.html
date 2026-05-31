@@ -4,13 +4,29 @@
 
 <h1>{{ meeting.title }}</h1>
 <p>{{ meeting.description }}</p>
-<p>{{ meeting.organizer.name }}</p>
+<p>Organizer: {{ meeting.organizer.name }}</p>
+
+<h2>Participants</h2>
 
 {% for participant in meeting.participants.all %}
     <p>{{ participant.user.name }} - {{ participant.get_invitation_status_display }}</p>
     <p>{{ participant.user.email }}</p>
+
+    {% if participant.user == user and participant.invitation_status == "PND" %}
+        <form action="{% url 'meeting:accept-invitation' participant.id %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit">Accept</button>
+        </form>
+
+        <form action="{% url 'meeting:decline-invitation' participant.id %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button type="submit">Decline</button>
+        </form>
+    {% endif %}
 {% empty %}
-    <p>No participants invited yet</p>
+    <p>No participants invited yet.</p>
 {% endfor %}
 
 {% if meeting.organizer == user %}

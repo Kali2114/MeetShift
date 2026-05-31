@@ -32,4 +32,15 @@ urlpatterns = [
         views.InviteParticipantView.as_view(),
         name="invite-participant",
     ),
+    path("invitations/", views.InvitationListView.as_view(), name="invitations"),
+    path(
+        "invitations/<int:pk>/accept/",
+        views.AcceptInvitationView.as_view(),
+        name="accept-invitation",
+    ),
+    path(
+        "invitations/<int:pk>/decline/",
+        views.DeclineInvitationView.as_view(),
+        name="decline-invitation",
+    ),
 ]
