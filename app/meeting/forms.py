@@ -45,21 +45,3 @@ class InviteParticipantForm(forms.Form):
         self.fields["users"].queryset = User.objects.exclude(
             id=self.meeting.organizer.id
         ).exclude(meeting_participations__meeting=self.meeting)
-
-    def clean_email(self):
-        """Validate invited user email."""
-        email = self.cleaned_data["email"]
-
-        try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            raise forms.ValidationError("User does not exist.")
-
-        if user == self.meeting.organizer:
-            raise forms.ValidationError("You cannot invite yourself.")
-
-        if self.meeting.participants.filter(user=user).exists():
-            raise forms.ValidationError("You are already invited.")
-
-        self.cleaned_data["user"] = user
-        return email

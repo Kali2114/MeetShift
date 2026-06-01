@@ -16,6 +16,7 @@ class UserRegisterFormTests(TestCase):
                 "email": "test@example.com",
                 "name": "testuser",
                 "password": "testpass123",
+                "password_confirm": "testpass123",
             }
         )
 
@@ -28,6 +29,7 @@ class UserRegisterFormTests(TestCase):
                 "email": "test@example.com",
                 "name": "testuser",
                 "password": "testpass123",
+                "password_confirm": "testpass123",
             }
         )
 
@@ -45,6 +47,7 @@ class UserRegisterFormTests(TestCase):
                 "email": "",
                 "name": "testuser",
                 "password": "testpass123",
+                "password_confirm": "testpass123",
             }
         )
 
@@ -57,6 +60,7 @@ class UserRegisterFormTests(TestCase):
                 "email": "test@example.com",
                 "name": "",
                 "password": "testpass123",
+                "password_confirm": "testpass123",
             }
         )
 
@@ -69,6 +73,34 @@ class UserRegisterFormTests(TestCase):
                 "email": "test@example.com",
                 "name": "testuser",
                 "password": "",
+                "password_confirm": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+
+    def test_register_form_passwords_must_match(self):
+        """Test form is invalid when passwords do not match."""
+        form = UserRegisterForm(
+            data={
+                "email": "test@example.com",
+                "name": "testuser",
+                "password": "testpass123",
+                "password_confirm": "wrongpass123",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("__all__", form.errors)
+
+    def test_register_form_requires_password_confirmation(self):
+        """Test password confirmation is required."""
+        form = UserRegisterForm(
+            data={
+                "email": "test@example.com",
+                "name": "testuser",
+                "password": "testpass123",
+                "password_confirm": "",
             }
         )
 

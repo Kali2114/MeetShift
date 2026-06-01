@@ -80,32 +80,29 @@ class InviteParticipantFormTests(TestCase):
         self.assertTrue(form.is_valid())
         self.assertIn(participant, form.cleaned_data["users"])
 
-    def test_invite_non_existing_user_invalid(self):
-        """Test invite form is invalid for non-existing user."""
+    def test_invite_participant_form_requires_users(self):
+        """Test invite participant form requires selected users."""
         organizer = utils.create_user(name="organizer", email="organizer@example.com")
         meeting = utils.create_meeting(organizer=organizer)
 
         form = InviteParticipantForm(
-            data={"email": "missing@example.com"},
+            data={"users": []},
             meeting=meeting,
         )
 
         self.assertFalse(form.is_valid())
 
-    def test_invite_organizer_invalid(self):
-        """Test invite form is invalid for meeting organizer."""
+    def test_invite_form_excludes_organizer_from_users_queryset(self):
+        """Test invite form excludes meeting organizer."""
         organizer = utils.create_user(name="organizer", email="organizer@example.com")
         meeting = utils.create_meeting(organizer=organizer)
 
-        form = InviteParticipantForm(
-            data={"email": organizer.email},
-            meeting=meeting,
-        )
+        form = InviteParticipantForm(meeting=meeting)
 
-        self.assertFalse(form.is_valid())
+        self.assertNotIn(organizer, form.fields["users"].queryset)
 
-    def test_invite_existing_participant_invalid(self):
-        """Test invite form is invalid for existing participant."""
+    def test_invite_form_excludes_existing_participant_from_users_queryset(self):
+        """Test invite form excludes existing meeting participant."""
         organizer = utils.create_user(name="organizer", email="organizer@example.com")
         participant = utils.create_user(
             name="participant", email="participant@example.com"
@@ -113,9 +110,18 @@ class InviteParticipantFormTests(TestCase):
         meeting = utils.create_meeting(organizer=organizer)
         utils.create_meeting_participant(meeting=meeting, user=participant)
 
-        form = InviteParticipantForm(
-            data={"email": participant.email},
-            meeting=meeting,
-        )
+        form = InviteParticipantForm(meeting=meeting)
 
-        self.assertFalse(form.is_valid())
+        self.assertNotIn(participant, form.fields["users"].queryset)
+
+    def test_invite_form_includes_available_user_in_users_queryset(self):
+        """Test invite form includes available user."""
+        organizer = utils.create_user(name="organizer", email="organizer@example.com")
+        available_user = utils.create_user(
+            name="available", email="available@example.com"
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+
+        form = InviteParticipantForm(meeting=meeting)
+
+        self.assertIn(available_user, form.fields["users"].queryset)
