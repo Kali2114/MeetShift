@@ -162,3 +162,9 @@ class ModelTests(TestCase):
 
         with self.assertRaises(IntegrityError):
             utils.create_time_slot_response(proposal=time_proposal, user=organizer)
+
+    def test_create_user_profile(self):
+        """Test creating user profile successful."""
+        user = utils.create_user(email="user@gmail.com", name="test_user")
+
+        self.assertEqual(str(user.user_profile), f"Profile of {user.name}")

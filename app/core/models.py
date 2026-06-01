@@ -70,6 +70,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         return self.email
 
 
+class UserProfile(models.Model):
+    """Model for user profile."""
+
+    user = models.OneToOneField(
+        "User", on_delete=models.CASCADE, related_name="user_profile"
+    )
+    avatar = models.ImageField(upload_to=avatar_file_path, blank=True, null=True)
+    bio = models.TextField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"Profile of {self.user.name}"
+
+
 class Meeting(models.Model):
     """Model for meeting object."""
 
