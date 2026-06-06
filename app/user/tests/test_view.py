@@ -2,11 +2,12 @@
 Tests for user views.
 """
 
+import tempfile
 from http import HTTPStatus
 
 from core.tests import utils
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.test import TestCase
+from django.test import TestCase, override_settings
 from django.urls import reverse
 
 REGISTER_URL = reverse("user:register")
@@ -68,6 +69,7 @@ class PrivateUserViewsTests(TestCase):
         self.assertNotEqual(self.user.email, payload["email"])
         self.assertNotEqual(self.user.name, payload["name"])
 
+    @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_user_can_upload_avatar(self):
         """Test user can upload own avatar."""
         avatar = SimpleUploadedFile(
