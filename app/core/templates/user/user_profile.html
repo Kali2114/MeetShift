@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="profile-container">
+    <div class="profile-card">
+        <h1>My Profile</h1>
+
+        <div class="profile-avatar">
+            {% if profile.avatar %}
+                <img src="{{ profile.avatar.url }}" alt="User avatar">
+            {% else %}
+                <div class="avatar-placeholder">
+                    {{ profile.user.name|first|upper }}
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="profile-info">
+            <p>
+                <strong>Name:</strong>
+                {{ profile.user.name }}
+            </p>
+
+            <p>
+                <strong>Email:</strong>
+                {{ profile.user.email }}
+            </p>
+
+            {% if profile.bio %}
+                <p>
+                    <strong>Bio:</strong>
+                    {{ profile.bio }}
+                </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
