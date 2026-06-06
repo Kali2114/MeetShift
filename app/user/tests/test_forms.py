@@ -3,7 +3,7 @@ Tests for user forms.
 """
 
 from django.test import TestCase
-from user.forms import UserRegisterForm
+from user.forms import UserProfileForm, UserRegisterForm
 
 
 class UserRegisterFormTests(TestCase):
@@ -105,3 +105,23 @@ class UserRegisterFormTests(TestCase):
         )
 
         self.assertFalse(form.is_valid())
+
+
+class UserProfileFormTests(TestCase):
+    """Test user profile form."""
+
+    def test_user_profile_form_valid_with_allowed_fields(self):
+        """Test profile form is valid with allowed fields."""
+        form = UserProfileForm(
+            data={
+                "bio": "Test bio",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+    def test_user_profile_form_has_only_allowed_fields(self):
+        """Test profile form contains only allowed fields."""
+        form = UserProfileForm()
+
+        self.assertEqual(list(form.fields), ["bio", "avatar"])

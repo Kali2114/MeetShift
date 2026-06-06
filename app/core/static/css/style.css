@@ -128,7 +128,9 @@ form {
     background: #fecaca;
 }
 
-button {
+button,
+.btn {
+    display: inline-block;
     border: none;
     border-radius: 8px;
     padding: 10px 14px;
@@ -136,10 +138,22 @@ button {
     color: #ffffff;
     text-decoration: none;
     cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
 }
 
-button:hover {
+button:hover,
+.btn:hover {
     background: #1d4ed8;
+}
+
+.btn.secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.btn.secondary:hover {
+    background: #d1d5db;
 }
 
 form p {
@@ -228,4 +242,127 @@ textarea {
 .message.success {
     background: #dcfce7;
     color: #166534;
+}
+
+.profile-container {
+    display: flex;
+    justify-content: center;
+}
+
+.profile-card {
+    width: 100%;
+    max-width: 700px;
+    background: #ffffff;
+    padding: 32px;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+.profile-card h1 {
+    margin-top: 0;
+    text-align: center;
+}
+
+.profile-content {
+    display: flex;
+    align-items: center;
+    gap: 40px;
+    margin-top: 30px;
+}
+
+.profile-avatar {
+    flex-shrink: 0;
+}
+
+.profile-avatar-img {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    border-radius: 50%;
+    display: block;
+}
+
+.profile-info {
+    flex: 1;
+}
+
+.profile-info p {
+    margin: 0 0 14px;
+}
+
+.profile-form {
+    margin-top: 24px;
+}
+
+.profile-form .form-group {
+    margin-bottom: 22px;
+}
+
+.profile-form label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.profile-form textarea,
+.profile-form input[type="file"] {
+    width: 100%;
+    max-width: 100%;
+}
+
+.profile-form input[type="checkbox"] {
+    width: auto;
+    margin: 0 8px 0 0;
+}
+
+.current-avatar {
+    margin: 0 0 10px;
+    font-size: 14px;
+    color: #4b5563;
+}
+
+.current-avatar a {
+    color: #2563eb;
+    word-break: break-all;
+}
+
+.form-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 18px;
+}
+
+@media (max-width: 700px) {
+    .profile-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-info {
+        width: 100%;
+    }
+}
+
+.current-avatar-box {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 14px;
+}
+
+.current-avatar-box img {
+    width: 70px;
+    height: 70px;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.current-avatar-box a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.current-avatar-box a:hover {
+    text-decoration: underline;
 }

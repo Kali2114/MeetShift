@@ -1,37 +1,42 @@
 {% extends "base.html" %}
+{% load static %}
 
 {% block content %}
 <div class="profile-container">
     <div class="profile-card">
         <h1>My Profile</h1>
 
-        <div class="profile-avatar">
-            {% if profile.avatar %}
-                <img src="{{ profile.avatar.url }}" alt="User avatar">
-            {% else %}
-                <div class="avatar-placeholder">
-                    {{ profile.user.name|first|upper }}
-                </div>
-            {% endif %}
-        </div>
+        <div class="profile-content">
+            <div class="profile-avatar">
+                {% if profile.avatar %}
+                    <img class="profile-avatar-img" src="{{ profile.avatar.url }}" alt="User avatar">
+                {% else %}
+                    <img class="profile-avatar-img" src="{% static 'img/no-avatar.jpg' %}" alt="Default avatar">
+                {% endif %}
+            </div>
 
-        <div class="profile-info">
-            <p>
-                <strong>Name:</strong>
-                {{ profile.user.name }}
-            </p>
-
-            <p>
-                <strong>Email:</strong>
-                {{ profile.user.email }}
-            </p>
-
-            {% if profile.bio %}
+            <div class="profile-info">
                 <p>
-                    <strong>Bio:</strong>
-                    {{ profile.bio }}
+                    <strong>Name:</strong>
+                    {{ profile.user.name }}
                 </p>
-            {% endif %}
+
+                <p>
+                    <strong>Email:</strong>
+                    {{ profile.user.email }}
+                </p>
+
+                {% if profile.bio %}
+                    <p>
+                        <strong>Bio:</strong>
+                        {{ profile.bio }}
+                    </p>
+                {% endif %}
+
+                <a href="{% url 'user:profile-edit' %}" class="btn">
+                    Edit profile
+                </a>
+            </div>
         </div>
     </div>
 </div>

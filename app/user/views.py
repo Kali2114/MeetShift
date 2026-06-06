@@ -1,8 +1,8 @@
 from core.models import UserProfile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView
-from user.forms import UserRegisterForm
+from django.views.generic import CreateView, DetailView, UpdateView
+from user.forms import UserProfileForm, UserRegisterForm
 
 
 class RegisterView(CreateView):
@@ -19,6 +19,18 @@ class UserProfileView(LoginRequiredMixin, DetailView):
     model = UserProfile
     template_name = "user/user_profile.html"
     context_object_name = "profile"
+
+    def get_object(self, queryset=None):
+        """Return current user profile."""
+        return self.request.user.user_profile
+
+
+class UserProfileUpdateView(LoginRequiredMixin, UpdateView):
+    """Update current profile user profile view."""
+
+    form_class = UserProfileForm
+    template_name = "user/user_edit_profile.html"
+    success_url = reverse_lazy("user:profile")
 
     def get_object(self, queryset=None):
         """Return current user profile."""

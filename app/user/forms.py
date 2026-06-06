@@ -2,7 +2,7 @@
 Forms for user app.
 """
 
-from core.models import User
+from core.models import User, UserProfile
 from django import forms
 
 
@@ -39,3 +39,11 @@ class UserRegisterForm(forms.ModelForm):
             user.save()
 
         return user
+
+
+class UserProfileForm(forms.ModelForm):
+    """Form for user profile."""
+
+    class Meta:
+        model = UserProfile
+        fields = ["bio", "avatar"]
