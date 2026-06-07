@@ -80,6 +80,34 @@ class PrivateUserViewsTests(TestCase):
         self.assertNotEqual(self.user.email, payload["email"])
         self.assertNotEqual(self.user.name, payload["name"])
 
+    def test_user_profile_edit_with_id_not_found(self):
+        """Test profile edit with user id does not exist."""
+        another_user = utils.create_user(
+            name="another_user",
+            email="another@example.com",
+        )
+
+        res = self.client.get(f"/user/profile/{another_user.id}/edit/")
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_delete_user_profile(self):
+        """Test user profile cannot be deleted from edit view."""
+        res = self.client.delete(USER_EDIT_PROFILE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.METHOD_NOT_ALLOWED)
+
+    def test_user_profile_delete_with_id_not_found(self):
+        """Test profile delete with user id does not exist."""
+        another_user = utils.create_user(
+            name="another_user",
+            email="another@example.com",
+        )
+
+        res = self.client.delete(f"/user/profile/{another_user.id}/delete/")
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
     @override_settings(MEDIA_ROOT=tempfile.gettempdir())
     def test_user_can_upload_avatar(self):
         """Test user can upload own avatar."""
@@ -107,14 +135,17 @@ class PrivateUserViewsTests(TestCase):
         )
 
     def test_get_another_user_detail(self):
-        """Test get another user detail page displayed."""
+        """Test another user's profile detail page is displayed."""
         another_user = utils.create_user(
-            name="another_user", email="another@example.com"
+            name="another_user",
+            email="another@example.com",
         )
+
         res = self.client.get(get_user_detail_url(another_user.id))
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(res, "user/user_profile.html")
+        self.assertEqual(res.context["profile"].user, another_user)
 
     def test_get_non_existing_user_detail_returns_not_found(self):
         """Test non-existing user profile detail returns 404."""
