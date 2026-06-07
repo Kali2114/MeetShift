@@ -2,6 +2,7 @@
 URLs for user app.
 """
 
+from django.contrib.auth.views import PasswordChangeView
 from django.urls import path
 from user import views
 
@@ -25,5 +26,10 @@ urlpatterns = [
         "account/edit",
         views.UserUpdateView.as_view(),
         name="user-edit",
+    ),
+    path(
+        "account/password-change/",
+        PasswordChangeView.as_view(template_name="user/password_change.html"),
+        name="password-change",
     ),
 ]

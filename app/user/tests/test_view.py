@@ -15,6 +15,7 @@ USER_PROFILE_URL = reverse("user:profile")
 USER_EDIT_PROFILE_URL = reverse("user:profile-edit")
 USER_ACCOUNT_SETTINGS_URL = reverse("user:account-settings")
 USER_EDIT_URL = reverse("user:user-edit")
+PASSWORD_CHANGE_URL = reverse("user:password-change")
 
 
 def get_user_detail_url(user_id):
@@ -56,12 +57,19 @@ class PublicUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
+    def test_password_change_requires_login(self):
+        """Test password change page requires login."""
+        res = self.client.get(PASSWORD_CHANGE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
 
 class PrivateUserViewsTests(TestCase):
     """Test private user views."""
 
     def setUp(self):
-        self.user = utils.create_user()
+        self.password = "Password"
+        self.user = utils.create_user(password=self.password)
         self.client.force_login(self.user)
 
     def test_user_profile_page(self):
@@ -185,14 +193,101 @@ class PrivateUserViewsTests(TestCase):
         """Test user can edit own name."""
         payload = {"name": "change_name"}
         res = self.client.post(USER_EDIT_URL, payload)
+        self.user.refresh_from_db()
 
-        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(self.user.name, payload["name"])
 
     def test_edit_user_email(self):
         """Test user cannot edit own email."""
-        payload = {"email": "change_email"}
+        payload = {
+            "name": "for_fun",
+            "email": "change_email",
+        }
+        old_email = self.user.email
         res = self.client.post(USER_EDIT_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertNotEqual(self.user.email, payload["email"])
+        self.assertEqual(old_email, self.user.email)
+
+    def test_password_change_page_displayed(self):
+        """Test password change page displayed."""
+        res = self.client.get(PASSWORD_CHANGE_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
-        self.assertNotEqual(self.user.email, payload["email"])
+        self.assertTemplateUsed(res, "user/password_change.html")
+
+    def test_change_user_password(self):
+        """Test user can change own password."""
+        payload = {
+            "old_password": self.password,
+            "new_password1": "new_password123",
+            "new_password2": "new_password123",
+        }
+
+        res = self.client.post(PASSWORD_CHANGE_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(self.user.check_password(payload["new_password1"]))
+
+    def test_change_password_bad_credentials(self):
+        """Test user cannot change password with bad credentials."""
+        payload = {
+            "old_password": "bad_password",
+            "new_password1": "new_password123",
+            "new_password2": "new_password123",
+        }
+
+        res = self.client.post(PASSWORD_CHANGE_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertFalse(self.user.check_password(payload["new_password1"]))
+        self.assertTrue(self.user.check_password(self.password))
+        self.assertTemplateUsed(res, "user/password_change.html")
+
+    def test_change_password_too_short(self):
+        """Test user cannot change password with too short."""
+        payload = {
+            "old_password": self.password,
+            "new_password1": "dd",
+            "new_password2": "dd",
+        }
+        res = self.client.post(PASSWORD_CHANGE_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertFalse(self.user.check_password(payload["new_password1"]))
+        self.assertTrue(self.user.check_password(self.password))
+
+    def test_change_password_entirely_numeric(self):
+        """Test user cannot change password to entirely numeric password."""
+        payload = {
+            "old_password": self.password,
+            "new_password1": "12345678",
+            "new_password2": "12345678",
+        }
+
+        res = self.client.post(PASSWORD_CHANGE_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertFalse(self.user.check_password(payload["new_password1"]))
+        self.assertTrue(self.user.check_password(self.password))
+
+    def test_change_password_same_as_old_password(self):
+        """Test user cannot change password to same old password."""
+        payload = {
+            "old_password": self.password,
+            "new_password1": self.password,
+            "new_password2": self.password,
+        }
+
+        res = self.client.post(PASSWORD_CHANGE_URL, payload)
+        self.user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTrue(self.user.check_password(self.password))
