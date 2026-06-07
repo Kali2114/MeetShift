@@ -47,3 +47,11 @@ class UserProfileForm(forms.ModelForm):
     class Meta:
         model = UserProfile
         fields = ["bio", "avatar"]
+
+
+class UserEditForm(forms.ModelForm):
+    """Form for editing user account."""
+
+    class Meta:
+        model = User
+        fields = ["name"]

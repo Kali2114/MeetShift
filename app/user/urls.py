@@ -21,4 +21,9 @@ urlpatterns = [
         views.AccountSettingsView.as_view(),
         name="account-settings",
     ),
+    path(
+        "account/edit",
+        views.UserUpdateView.as_view(),
+        name="user-edit",
+    ),
 ]

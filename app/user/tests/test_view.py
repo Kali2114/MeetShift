@@ -14,6 +14,7 @@ REGISTER_URL = reverse("user:register")
 USER_PROFILE_URL = reverse("user:profile")
 USER_EDIT_PROFILE_URL = reverse("user:profile-edit")
 USER_ACCOUNT_SETTINGS_URL = reverse("user:account-settings")
+USER_EDIT_URL = reverse("user:user-edit")
 
 
 def get_user_detail_url(user_id):
@@ -46,6 +47,12 @@ class PublicUserViewsTests(TestCase):
     def test_user_account_settings_page_requires_login(self):
         """Test user account settings page requires login."""
         res = self.client.get(USER_ACCOUNT_SETTINGS_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_edit_user_page_requires_login(self):
+        """Test edit user page requires login."""
+        res = self.client.get(USER_EDIT_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
@@ -166,3 +173,26 @@ class PrivateUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(res, "user/account_settings.html")
+
+    def test_get_edit_user_page(self):
+        """Test edit user page is displayed."""
+        res = self.client.get(USER_EDIT_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/user_edit.html")
+
+    def test_edit_user_name(self):
+        """Test user can edit own name."""
+        payload = {"name": "change_name"}
+        res = self.client.post(USER_EDIT_URL, payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertEqual(self.user.name, payload["name"])
+
+    def test_edit_user_email(self):
+        """Test user cannot edit own email."""
+        payload = {"email": "change_email"}
+        res = self.client.post(USER_EDIT_URL, payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertNotEqual(self.user.email, payload["email"])

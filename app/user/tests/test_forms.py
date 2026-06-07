@@ -3,7 +3,7 @@ Tests for user forms.
 """
 
 from django.test import TestCase
-from user.forms import UserProfileForm, UserRegisterForm
+from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
 
 
 class UserRegisterFormTests(TestCase):
@@ -125,3 +125,33 @@ class UserProfileFormTests(TestCase):
         form = UserProfileForm()
 
         self.assertEqual(list(form.fields), ["bio", "avatar"])
+
+
+class UserEditFormTests(TestCase):
+    """Test user edit form."""
+
+    def test_user_edit_form_valid_with_name(self):
+        """Test user edit form is valid with name."""
+        form = UserEditForm(
+            data={
+                "name": "New name",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+    def test_user_edit_form_requires_name(self):
+        """Test user edit form requires name."""
+        form = UserEditForm(
+            data={
+                "name": "",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+
+    def test_user_edit_form_has_only_allowed_fields(self):
+        """Test user edit form contains only allowed fields."""
+        form = UserEditForm()
+
+        self.assertEqual(list(form.fields), ["name"])
