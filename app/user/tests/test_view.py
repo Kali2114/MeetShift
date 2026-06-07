@@ -15,6 +15,11 @@ USER_PROFILE_URL = reverse("user:profile")
 USER_EDIT_PROFILE_URL = reverse("user:profile-edit")
 
 
+def get_user_detail_url(user_id):
+    """Return user detail url."""
+    return reverse("user:profile-detail", args=[user_id])
+
+
 class PublicUserViewsTests(TestCase):
     """Test public user views."""
 
@@ -28,6 +33,12 @@ class PublicUserViewsTests(TestCase):
     def test_user_profile_page_requires_login(self):
         """Test user profile page requires login."""
         res = self.client.get(USER_PROFILE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_user_detail_page_requires_login(self):
+        """Test user profile detail page requires login."""
+        res = self.client.get(get_user_detail_url(1))
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
@@ -94,3 +105,19 @@ class PrivateUserViewsTests(TestCase):
         self.assertTrue(
             self.user.user_profile.avatar.name.startswith("uploads/avatar/")
         )
+
+    def test_get_another_user_detail(self):
+        """Test get another user detail page displayed."""
+        another_user = utils.create_user(
+            name="another_user", email="another@example.com"
+        )
+        res = self.client.get(get_user_detail_url(another_user.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/user_profile.html")
+
+    def test_get_non_existing_user_detail_returns_not_found(self):
+        """Test non-existing user profile detail returns 404."""
+        res = self.client.get(get_user_detail_url(99))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)

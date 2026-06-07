@@ -4,7 +4,11 @@
 {% block content %}
 <div class="profile-container">
     <div class="profile-card">
-        <h1>My Profile</h1>
+        {% if profile.user == user %}
+            <h1>My Profile</h1>
+        {% else %}
+            <h1>{{ profile.user.name }}'s Profile</h1>
+        {% endif %}
 
         <div class="profile-content">
             <div class="profile-avatar">
@@ -33,9 +37,11 @@
                     </p>
                 {% endif %}
 
-                <a href="{% url 'user:profile-edit' %}" class="btn">
-                    Edit profile
-                </a>
+                {% if profile.user == user %}
+                    <a href="{% url 'user:profile-edit' %}" class="btn">
+                        Edit profile
+                    </a>
+                {% endif %}
             </div>
         </div>
     </div>

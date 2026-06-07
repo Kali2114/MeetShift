@@ -366,3 +366,14 @@ textarea {
 .current-avatar-box a:hover {
     text-decoration: underline;
 }
+
+.profile-link {
+    color: #111827;
+    font-weight: 600;
+    text-decoration: none;
+}
+
+.profile-link:hover {
+    color: #2563eb;
+    text-decoration: none;
+}
