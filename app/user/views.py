@@ -2,7 +2,7 @@ from core.models import UserProfile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, UpdateView
+from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
 from user.forms import UserProfileForm, UserRegisterForm
 
 
@@ -48,3 +48,9 @@ class UserProfileDetailView(LoginRequiredMixin, DetailView):
     def get_object(self, queryset=None):
         """Return selected user's profile."""
         return get_object_or_404(UserProfile, user_id=self.kwargs["pk"])
+
+
+class AccountSettingsView(LoginRequiredMixin, TemplateView):
+    """Display account settings page."""
+
+    template_name = "user/account_settings.html"

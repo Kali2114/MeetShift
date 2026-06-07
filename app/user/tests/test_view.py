@@ -13,6 +13,7 @@ from django.urls import reverse
 REGISTER_URL = reverse("user:register")
 USER_PROFILE_URL = reverse("user:profile")
 USER_EDIT_PROFILE_URL = reverse("user:profile-edit")
+USER_ACCOUNT_SETTINGS_URL = reverse("user:account-settings")
 
 
 def get_user_detail_url(user_id):
@@ -39,6 +40,12 @@ class PublicUserViewsTests(TestCase):
     def test_user_detail_page_requires_login(self):
         """Test user profile detail page requires login."""
         res = self.client.get(get_user_detail_url(1))
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_user_account_settings_page_requires_login(self):
+        """Test user account settings page requires login."""
+        res = self.client.get(USER_ACCOUNT_SETTINGS_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
@@ -152,3 +159,10 @@ class PrivateUserViewsTests(TestCase):
         res = self.client.get(get_user_detail_url(99))
 
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_get_user_setting_page(self):
+        """Test user settings page is displayed."""
+        res = self.client.get(USER_ACCOUNT_SETTINGS_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/account_settings.html")

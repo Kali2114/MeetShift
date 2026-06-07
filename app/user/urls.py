@@ -16,4 +16,9 @@ urlpatterns = [
         views.UserProfileDetailView.as_view(),
         name="profile-detail",
     ),
+    path(
+        "account/settings/",
+        views.AccountSettingsView.as_view(),
+        name="account-settings",
+    ),
 ]
