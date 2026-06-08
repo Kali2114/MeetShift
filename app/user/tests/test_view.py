@@ -18,6 +18,9 @@ USER_ACCOUNT_SETTINGS_URL = reverse("user:account-settings")
 USER_EDIT_URL = reverse("user:user-edit")
 PASSWORD_CHANGE_URL = reverse("user:password-change")
 USER_DELETE_URL = reverse("user:user-delete")
+PASSWORD_RESET_URL = reverse("user:password-reset")
+PASSWORD_RESET_DONE_URL = reverse("user:password-reset-done")
+PASSWORD_RESET_COMPLETE_URL = reverse("user:password-reset-complete")
 
 
 def get_user_detail_url(user_id):
@@ -70,6 +73,27 @@ class PublicUserViewsTests(TestCase):
         res = self.client.get(USER_DELETE_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_password_reset_page_displayed(self):
+        """Test password reset page is displayed."""
+        res = self.client.get(PASSWORD_RESET_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/password_reset.html")
+
+    def test_password_reset_done_page_displayed(self):
+        """Test password reset done page is displayed."""
+        res = self.client.get(PASSWORD_RESET_DONE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/password_reset_done.html")
+
+    def test_password_reset_complete_page_displayed(self):
+        """Test password reset complete page is displayed."""
+        res = self.client.get(PASSWORD_RESET_COMPLETE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/password_reset_complete.html")
 
 
 class PrivateUserViewsTests(TestCase):
@@ -314,3 +338,12 @@ class PrivateUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertFalse(User.objects.filter(id=user_id).exists())
+
+    def test_user_password_reset(self):
+        """Test password reset email can be requested."""
+        payload = {
+            "email": self.user.email,
+        }
+        res = self.client.post(PASSWORD_RESET_URL, payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)

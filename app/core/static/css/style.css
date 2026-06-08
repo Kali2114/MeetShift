@@ -385,3 +385,19 @@ textarea {
 .btn.danger:hover {
     background: #b91c1c;
 }
+
+.auth-helper {
+    margin-top: 18px;
+    text-align: center;
+    color: #6b7280;
+}
+
+.auth-helper a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.auth-helper a:hover {
+    text-decoration: underline;
+}

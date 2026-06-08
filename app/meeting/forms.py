@@ -13,8 +13,14 @@ class MeetingForm(forms.ModelForm):
         model = Meeting
         fields = ["title", "description", "started_at", "ended_at"]
         widgets = {
-            "started_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
-            "ended_at": forms.DateTimeInput(attrs={"type": "datetime-local"}),
+            "started_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
+            "ended_at": forms.DateTimeInput(
+                attrs={"type": "datetime-local"},
+                format="%Y-%m-%dT%H:%M",
+            ),
         }
 
     def clean(self):
