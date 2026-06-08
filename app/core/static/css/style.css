@@ -377,3 +377,11 @@ textarea {
     color: #2563eb;
     text-decoration: none;
 }
+
+.btn.danger {
+    background: #dc2626;
+}
+
+.btn.danger:hover {
+    background: #b91c1c;
+}

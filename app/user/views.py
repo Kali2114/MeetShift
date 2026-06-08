@@ -2,7 +2,13 @@ from core.models import UserProfile
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404
 from django.urls import reverse_lazy
-from django.views.generic import CreateView, DetailView, TemplateView, UpdateView
+from django.views.generic import (
+    CreateView,
+    DeleteView,
+    DetailView,
+    TemplateView,
+    UpdateView,
+)
 from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
 
 
@@ -62,6 +68,17 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
     form_class = UserEditForm
     template_name = "user/user_edit.html"
     success_url = reverse_lazy("user:account-settings")
+
+    def get_object(self, queryset=None):
+        """Return current user."""
+        return self.request.user
+
+
+class UserDeleteView(LoginRequiredMixin, DeleteView):
+    """Delete current user account."""
+
+    template_name = "user/user_delete.html"
+    success_url = reverse_lazy("login")
 
     def get_object(self, queryset=None):
         """Return current user."""

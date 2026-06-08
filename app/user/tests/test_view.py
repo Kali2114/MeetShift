@@ -5,6 +5,7 @@ Tests for user views.
 import tempfile
 from http import HTTPStatus
 
+from core.models import User
 from core.tests import utils
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
@@ -16,6 +17,7 @@ USER_EDIT_PROFILE_URL = reverse("user:profile-edit")
 USER_ACCOUNT_SETTINGS_URL = reverse("user:account-settings")
 USER_EDIT_URL = reverse("user:user-edit")
 PASSWORD_CHANGE_URL = reverse("user:password-change")
+USER_DELETE_URL = reverse("user:user-delete")
 
 
 def get_user_detail_url(user_id):
@@ -60,6 +62,12 @@ class PublicUserViewsTests(TestCase):
     def test_password_change_requires_login(self):
         """Test password change page requires login."""
         res = self.client.get(PASSWORD_CHANGE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_delete_user_requires_login(self):
+        """Test delete user page requires login."""
+        res = self.client.get(USER_DELETE_URL)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
@@ -291,3 +299,18 @@ class PrivateUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertTrue(self.user.check_password(self.password))
+
+    def test_delete_user_page_displayed(self):
+        """Test user delete page displayed successfully."""
+        res = self.client.get(USER_DELETE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/user_delete.html")
+
+    def test_delete_user(self):
+        """Test user can delete user successfully."""
+        user_id = self.user.id
+        res = self.client.post(USER_DELETE_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertFalse(User.objects.filter(id=user_id).exists())

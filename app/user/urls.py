@@ -32,4 +32,9 @@ urlpatterns = [
         PasswordChangeView.as_view(template_name="user/password_change.html"),
         name="password-change",
     ),
+    path(
+        "account/delete/",
+        views.UserDeleteView.as_view(),
+        name="user-delete",
+    ),
 ]
