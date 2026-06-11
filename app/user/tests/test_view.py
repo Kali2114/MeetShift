@@ -28,6 +28,11 @@ def get_user_detail_url(user_id):
     return reverse("user:profile-detail", args=[user_id])
 
 
+def get_notification_read_url(notification_id):
+    """Return notification url."""
+    return reverse("user:notification", args=[notification_id])
+
+
 class PublicUserViewsTests(TestCase):
     """Test public user views."""
 
@@ -94,6 +99,16 @@ class PublicUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertTemplateUsed(res, "user/password_reset_complete.html")
+
+    def test_get_notification_requires_login(self):
+        """Test notification read view requires login."""
+        res = self.client.get(get_notification_read_url(5))
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(
+            res,
+            f"{reverse('login')}?next={get_notification_read_url(5)}",
+        )
 
 
 class PrivateUserViewsTests(TestCase):
@@ -347,3 +362,47 @@ class PrivateUserViewsTests(TestCase):
         res = self.client.post(PASSWORD_RESET_URL, payload)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
+
+    def test_user_can_read_own_notification(self):
+        """Test user can mark own notification as read."""
+        organizer = utils.create_user(
+            name="organizer",
+            email="organizer@example.com",
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+
+        utils.create_meeting_participant(
+            meeting=meeting,
+            user=self.user,
+        )
+
+        notification = utils.create_notification(
+            user=self.user,
+            meeting=meeting,
+        )
+
+        res = self.client.get(get_notification_read_url(notification.id))
+        notification.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(notification.is_read)
+        self.assertRedirects(
+            res,
+            reverse("meeting:detail-meeting", args=[meeting.id]),
+        )
+
+    def test_user_cannot_read_other_notification(self):
+        """Test user cannot mark other user's notification as read."""
+        participant = utils.create_user(
+            name="participant", email="participant@example.com"
+        )
+        meeting = utils.create_meeting(organizer=self.user)
+        notification = utils.create_notification(
+            user=participant,
+            meeting=meeting,
+        )
+        res = self.client.get(get_notification_read_url(notification.id))
+        notification.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(notification.is_read)

@@ -172,9 +172,22 @@ class ModelTests(TestCase):
     def test_create_notification(self):
         """Test creating notification successful."""
         user = utils.create_user(email="user@gmail.com", name="test_user")
+        meeting = utils.create_meeting(organizer=user)
         notification = models.Notification.objects.create(
             user=user,
+            meeting=meeting,
             message="Test_message",
         )
 
         self.assertEqual(str(notification), f"{notification.message} to {user.name}")
+
+    def test_notification_default_is_unread(self):
+        """Test notification is unread by default."""
+        user = utils.create_user(email="user@gmail.com", name="test_user")
+
+        notification = models.Notification.objects.create(
+            user=user,
+            message="Test message",
+        )
+
+        self.assertFalse(notification.is_read)

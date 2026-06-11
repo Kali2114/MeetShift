@@ -57,3 +57,12 @@ def create_time_slot_proposal(**params):
 def create_time_slot_response(**params):
     """Create and return a new time slot response."""
     return models.TimeSlotResponse.objects.create(**params)
+
+
+def create_notification(**params):
+    """Create and return a new notification."""
+    default_notification = {
+        "message": "test_message",
+    }
+    default_notification.update(**params)
+    return models.Notification.objects.create(**default_notification)

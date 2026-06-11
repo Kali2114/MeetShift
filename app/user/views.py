@@ -1,6 +1,6 @@
-from core.models import UserProfile
+from core.models import Notification, UserProfile
 from django.contrib.auth.mixins import LoginRequiredMixin
-from django.shortcuts import get_object_or_404
+from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views.generic import (
     CreateView,
@@ -8,6 +8,7 @@ from django.views.generic import (
     DetailView,
     TemplateView,
     UpdateView,
+    View,
 )
 from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
 
@@ -83,3 +84,15 @@ class UserDeleteView(LoginRequiredMixin, DeleteView):
     def get_object(self, queryset=None):
         """Return current user."""
         return self.request.user
+
+
+class NotificationReadView(LoginRequiredMixin, View):
+    """Mark notifications as read and redirect to meeting details."""
+
+    def get(self, request, pk):
+        """Get current user's notifications."""
+        notification = get_object_or_404(Notification, pk=pk, user=self.request.user)
+        notification.is_read = True
+        notification.save(update_fields=["is_read"])
+
+        return redirect("meeting:detail-meeting", pk=notification.meeting.id)
