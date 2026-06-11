@@ -154,7 +154,7 @@ class TimeSlotProposal(models.Model):
 
 
 class TimeSlotResponse(models.Model):
-    """Moedel for time slot response object."""
+    """Model for time slot response object."""
 
     proposal = models.ForeignKey(
         "TimeSlotProposal", on_delete=models.CASCADE, related_name="responses"
@@ -176,3 +176,17 @@ class TimeSlotResponse(models.Model):
 
     def __str__(self):
         return f"{self.response} by {self.user} to {self.proposal}"
+
+
+class Notification(models.Model):
+    """Model for notification object."""
+
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="notifications"
+    )
+    message = models.CharField(max_length=255)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.message} to {self.user.name}"

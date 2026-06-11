@@ -168,3 +168,13 @@ class ModelTests(TestCase):
         user = utils.create_user(email="user@gmail.com", name="test_user")
 
         self.assertEqual(str(user.user_profile), f"Profile of {user.name}")
+
+    def test_create_notification(self):
+        """Test creating notification successful."""
+        user = utils.create_user(email="user@gmail.com", name="test_user")
+        notification = models.Notification.objects.create(
+            user=user,
+            message="Test_message",
+        )
+
+        self.assertEqual(str(notification), f"{notification.message} to {user.name}")
