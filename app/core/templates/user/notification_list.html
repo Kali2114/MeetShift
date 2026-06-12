@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="notifications-page">
+    <h1>Notifications</h1>
+
+    {% if notifications %}
+        <div class="notifications-list">
+            {% for notification in notifications %}
+                <a
+                    href="{% url 'user:notification' notification.id %}"
+                    class="notification-item {% if not notification.is_read %}unread{% endif %}"
+                >
+                    <div class="notification-message">
+                        {{ notification.message }}
+                    </div>
+
+                    <div class="notification-date">
+                        {{ notification.created_at|date:"d M Y H:i" }}
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No notifications yet.</p>
+    {% endif %}
+</section>
+{% endblock %}

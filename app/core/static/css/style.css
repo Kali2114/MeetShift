@@ -401,3 +401,35 @@ textarea {
 .auth-helper a:hover {
     text-decoration: underline;
 }
+
+.notifications-page {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.notification-item {
+    display: block;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    text-decoration: none;
+    color: #111827;
+    border: 1px solid #e5e7eb;
+}
+
+.notification-item.unread {
+    font-weight: 700;
+    border-left: 5px solid #2563eb;
+}
+
+.notification-date {
+    margin-top: 6px;
+    font-size: 13px;
+    color: #6b7280;
+}

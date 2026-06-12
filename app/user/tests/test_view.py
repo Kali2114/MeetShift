@@ -21,6 +21,7 @@ USER_DELETE_URL = reverse("user:user-delete")
 PASSWORD_RESET_URL = reverse("user:password-reset")
 PASSWORD_RESET_DONE_URL = reverse("user:password-reset-done")
 PASSWORD_RESET_COMPLETE_URL = reverse("user:password-reset-complete")
+NOTIFICATION_LIST_URL = reverse("user:notification-list")
 
 
 def get_user_detail_url(user_id):
@@ -109,6 +110,13 @@ class PublicUserViewsTests(TestCase):
             res,
             f"{reverse('login')}?next={get_notification_read_url(5)}",
         )
+
+    def test_get_notification_list_requires_login(self):
+        """Test get notification list view requires login."""
+        res = self.client.get(NOTIFICATION_LIST_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(res, f"{reverse('login')}?next={NOTIFICATION_LIST_URL}")
 
 
 class PrivateUserViewsTests(TestCase):
@@ -398,11 +406,43 @@ class PrivateUserViewsTests(TestCase):
         )
         meeting = utils.create_meeting(organizer=self.user)
         notification = utils.create_notification(
-            user=participant,
-            meeting=meeting,
+            user=participant, meeting=meeting, message="test_message"
         )
         res = self.client.get(get_notification_read_url(notification.id))
         notification.refresh_from_db()
 
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         self.assertFalse(notification.is_read)
+
+    def test_user_can_see_own_notification(self):
+        """Test user can see own notifications successfully."""
+        organizer = utils.create_user(
+            name="organizer",
+            email="organizer@example.com",
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+        notification = utils.create_notification(
+            user=self.user, meeting=meeting, message="test_message"
+        )
+        res = self.client.get(NOTIFICATION_LIST_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertContains(res, notification.message)
+        self.assertTemplateUsed(
+            res,
+            "user/notification_list.html",
+        )
+
+    def test_user_can_not_see_other_notifications(self):
+        """Test user cannot see other user's notifications."""
+        other_user = utils.create_user(
+            name="other_user", email="other_user@example.com"
+        )
+        meeting = utils.create_meeting(organizer=self.user)
+        notification = utils.create_notification(
+            user=other_user, meeting=meeting, message="test_message"
+        )
+        res = self.client.get(NOTIFICATION_LIST_URL)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertNotContains(res, notification.message)

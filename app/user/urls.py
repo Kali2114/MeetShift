@@ -80,4 +80,9 @@ urlpatterns = [
         views.NotificationReadView.as_view(),
         name="notification",
     ),
+    path(
+        "notifications/",
+        views.NotificationListView.as_view(),
+        name="notification-list",
+    ),
 ]

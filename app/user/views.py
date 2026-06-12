@@ -6,6 +6,7 @@ from django.views.generic import (
     CreateView,
     DeleteView,
     DetailView,
+    ListView,
     TemplateView,
     UpdateView,
     View,
@@ -96,3 +97,17 @@ class NotificationReadView(LoginRequiredMixin, View):
         notification.save(update_fields=["is_read"])
 
         return redirect("meeting:detail-meeting", pk=notification.meeting.id)
+
+
+class NotificationListView(LoginRequiredMixin, ListView):
+    """Display current user notifications list."""
+
+    model = Notification
+    template_name = "user/notification_list.html"
+    context_object_name = "notifications"
+
+    def get_queryset(self):
+        """Return current user's notifications."""
+        return Notification.objects.filter(user=self.request.user).order_by(
+            "-created_at"
+        )
