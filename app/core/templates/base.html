@@ -28,7 +28,14 @@
                     {% if user.is_authenticated %}
                         <form action="{% url 'logout' %}" method="post" class="logout-form">
                             {% csrf_token %}
-                             <a href="{% url 'user:notification-list' %}">Notifications</a>
+                             <a href="{% url 'user:notification-list' %}" class="notification-link">
+                                Notifications
+                                {% if unread_notifications_count %}
+                                    <span class="notification-badge">
+                                        {{ unread_notifications_count }}
+                                    </span>
+                                {% endif %}
+                            </a>
                              <button type="submit" class="logout-link">Logout</button>
                         </form>
                     {% else %}
