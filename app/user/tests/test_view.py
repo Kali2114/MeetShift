@@ -31,7 +31,7 @@ def get_user_detail_url(user_id):
 
 def get_notification_read_url(notification_id):
     """Return notification url."""
-    return reverse("user:notification", args=[notification_id])
+    return reverse("user:notification-read", args=[notification_id])
 
 
 class PublicUserViewsTests(TestCase):

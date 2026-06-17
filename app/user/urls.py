@@ -78,7 +78,7 @@ urlpatterns = [
     path(
         "notifications/<int:pk>/read/",
         views.NotificationReadView.as_view(),
-        name="notification",
+        name="notification-read",
     ),
     path(
         "notifications/",

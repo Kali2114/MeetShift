@@ -5,7 +5,7 @@ Tests for meeting views.
 from datetime import timedelta
 from http import HTTPStatus
 
-from core.models import Meeting
+from core.models import Meeting, Notification
 from core.tests import utils
 from django.contrib.messages import get_messages
 from django.test import Client, TestCase
@@ -516,3 +516,19 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(non_conflicting_invitation.invitation_status, "ACC")
+
+    def test_invite_participant_creates_notification(self):
+        """Test invite participant creates notification."""
+
+        meeting = utils.create_meeting(organizer=self.user)
+        payload = {
+            "meeting": meeting.id,
+            "users": [self.participant.id],
+        }
+        res = self.client.post(
+            get_meeting_invite_url(meeting.id),
+            payload,
+        )
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(Notification.objects.filter(user=self.participant).exists())

@@ -8,7 +8,7 @@
         <div class="notifications-list">
             {% for notification in notifications %}
                 <a
-                    href="{% url 'user:notification' notification.id %}"
+                    href="{% url 'user:notification-read' notification.id %}"
                     class="notification-item {% if not notification.is_read %}unread{% endif %}"
                 >
                     <div class="notification-message">

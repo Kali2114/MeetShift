@@ -2,7 +2,7 @@
 Views for meeting app.
 """
 
-from core.models import Meeting, MeetingParticipant
+from core.models import Meeting, MeetingParticipant, Notification
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
@@ -123,6 +123,11 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
             MeetingParticipant.objects.create(
                 meeting=self.meeting,
                 user=user,
+            )
+            Notification.objects.create(
+                meeting=self.meeting,
+                user=user,
+                message=f"You have been invited to meeting: {self.meeting}",
             )
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
