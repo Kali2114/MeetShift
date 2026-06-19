@@ -26,7 +26,7 @@
                     <form action="{% url 'meeting:decline-invitation' invitation.id %}" method="post">
                         {% csrf_token %}
                         <input type="hidden" name="next" value="{{ request.path }}">
-                        <button type="submit">Decline</button>
+                        <button type="submit" class="participant-btn decline-btn">Decline</button>
                     </form>
                 </div>
             {% endif %}

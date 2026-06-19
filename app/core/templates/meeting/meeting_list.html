@@ -12,14 +12,23 @@
             </h2>
 
             <p>{{ meeting.description }}</p>
+            <p>Meeting Organizer: {{ meeting.organizer.name }}</p>
             <p>Starting at: {{ meeting.started_at }}</p>
             <p>Ending at: {{ meeting.ended_at }}</p>
 
             {% if meeting.organizer == user %}
                 <div class="meeting-actions">
-                    <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
-                    <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
-                    <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
+                    <a href="{% url 'meeting:edit-meeting' meeting.id %}" class="action-btn edit-btn">
+                        Edit
+                    </a>
+
+                    <a href="{% url 'meeting:delete-meeting' meeting.id %}" class="action-btn delete-btn">
+                        Delete
+                    </a>
+
+                    <a href="{% url 'meeting:invite-participant' meeting.id %}" class="action-btn invite-btn">
+                        Invite participant
+                    </a>
                 </div>
             {% endif %}
         </div>

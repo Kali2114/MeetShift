@@ -73,7 +73,11 @@ body {
 }
 
 .meeting-card,
-form {
+.calendar-card,
+.profile-card,
+.meeting-detail-card,
+.auth-form,
+.page-form {
     background: #ffffff;
     padding: 24px;
     border-radius: 12px;
@@ -97,35 +101,56 @@ form {
     color: #2563eb;
 }
 
-.meeting-actions {
-    display: flex;
-    gap: 12px;
-    margin-top: 16px;
+.meeting-detail-card {
+    padding: 32px;
 }
 
-.meeting-actions a {
+.meeting-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.action-btn {
+    display: inline-block;
+    border: none;
     border-radius: 8px;
     padding: 10px 14px;
     text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
     font-weight: 500;
 }
 
-.meeting-actions a:first-child {
-    background: #e0ecff;
-    color: #1d4ed8;
+.edit-btn {
+    background: #2563eb;
+    color: #ffffff;
 }
 
-.meeting-actions a:first-child:hover {
-    background: #bfdbfe;
+.edit-btn:hover {
+    background: #1d4ed8;
+    color: #ffffff;
 }
 
-.meeting-actions a:last-child {
-    background: #fee2e2;
-    color: #b91c1c;
+.delete-btn {
+    background: #ef4444;
+    color: #ffffff;
 }
 
-.meeting-actions a:last-child:hover {
-    background: #fecaca;
+.delete-btn:hover {
+    background: #dc2626;
+    color: #ffffff;
+}
+
+.invite-btn {
+    background: #10b981;
+    color: #ffffff;
+}
+
+.invite-btn:hover {
+    background: #059669;
+    color: #ffffff;
 }
 
 button,
@@ -156,7 +181,25 @@ button:hover,
     background: #d1d5db;
 }
 
-form p {
+.btn.danger {
+    background: #dc2626;
+}
+
+.btn.danger:hover {
+    background: #b91c1c;
+}
+
+.inline-action-form {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+}
+
+.auth-form p,
+.page-form p,
+.profile-form p {
     display: grid;
     grid-template-columns: 100px 1fr;
     align-items: center;
@@ -196,13 +239,6 @@ textarea {
 
 .dashboard-header p {
     color: #6b7280;
-}
-
-.calendar-card {
-    background: #ffffff;
-    padding: 24px;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .auth-links .logout-form {
@@ -252,10 +288,7 @@ textarea {
 .profile-card {
     width: 100%;
     max-width: 700px;
-    background: #ffffff;
     padding: 32px;
-    border-radius: 12px;
-    box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
 .profile-card h1 {
@@ -332,17 +365,6 @@ textarea {
     margin-top: 18px;
 }
 
-@media (max-width: 700px) {
-    .profile-content {
-        flex-direction: column;
-        text-align: center;
-    }
-
-    .profile-info {
-        width: 100%;
-    }
-}
-
 .current-avatar-box {
     display: flex;
     align-items: center;
@@ -378,14 +400,6 @@ textarea {
     text-decoration: none;
 }
 
-.btn.danger {
-    background: #dc2626;
-}
-
-.btn.danger:hover {
-    background: #b91c1c;
-}
-
 .auth-helper {
     margin-top: 18px;
     text-align: center;
@@ -413,10 +427,25 @@ textarea {
     gap: 12px;
 }
 
+.notification-link {
+    position: relative;
+}
+
+.notification-badge {
+    display: inline-block;
+    margin-left: 4px;
+    padding: 2px 7px;
+    border-radius: 999px;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 12px;
+    font-weight: 700;
+}
+
 .notification-item {
     display: block;
     padding: 16px 20px;
-    background: white;
+    background: #ffffff;
     border-radius: 12px;
     text-decoration: none;
     color: #111827;
@@ -445,11 +474,11 @@ textarea {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 24px;
     background: #ffffff;
     border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    padding: 18px 22px;
-    box-shadow: 0 10px 25px rgba(15, 23, 42, 0.06);
+    border-radius: 12px;
+    padding: 16px 18px;
 }
 
 .participant-info p {
@@ -473,27 +502,61 @@ textarea {
 
 .participant-actions {
     display: flex;
+    align-items: center;
     gap: 10px;
 }
 
-.participant-actions form {
+.participant-action-form {
     margin: 0;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
 }
 
-.btn {
+.participant-btn {
     border: none;
     border-radius: 8px;
     padding: 9px 14px;
     cursor: pointer;
+    font-size: 14px;
     font-weight: 600;
 }
 
-.btn-accept {
+.accept-btn {
     background: #2563eb;
-    color: white;
+    color: #ffffff;
 }
 
-.btn-decline {
+.accept-btn:hover {
+    background: #1d4ed8;
+}
+
+.decline-btn {
     background: #ef4444;
-    color: white;
+    color: #ffffff;
+}
+
+.decline-btn:hover {
+    background: #dc2626;
+}
+
+@media (max-width: 700px) {
+    .profile-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .profile-info {
+        width: 100%;
+    }
+
+    .participant-card {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .participant-actions {
+        width: 100%;
+    }
 }

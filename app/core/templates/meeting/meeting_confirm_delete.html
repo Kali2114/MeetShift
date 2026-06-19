@@ -5,7 +5,7 @@
 
     <p>Are you sure you want to delete "{{ object.title }}"?</p>
 
-    <form method="post">
+    <form method="post" class="page-form">
         {% csrf_token %}
         <button type="submit">Yes, delete</button>
     </form>

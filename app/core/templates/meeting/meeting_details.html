@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="meeting-card">
-    <h1>{{ meeting.title }}</h1>
 
+<div class="meeting-detail-card">
+    <h1>{{ meeting.title }}</h1>
     <p>{{ meeting.description }}</p>
 
     <p>
-        <strong>Organizer:</strong>
+        Organizer:
         <a class="profile-link" href="{% url 'user:profile-detail' meeting.organizer.id %}">
             {{ meeting.organizer.name }}
         </a>
@@ -18,27 +18,33 @@
     <div class="participants-list">
         {% for participant in meeting.participants.all %}
             <div class="participant-card">
-                <p>
-                    <a class="profile-link" href="{% url 'user:profile-detail' participant.user.id %}">
-                        {{ participant.user.name }}
-                    </a>
-                    - {{ participant.get_invitation_status_display }}
-                </p>
+                <div class="participant-info">
+                    <p>
+                        <a class="profile-link" href="{% url 'user:profile-detail' participant.user.id %}">
+                            {{ participant.user.name }}
+                        </a>
+                        <span class="status-badge">
+                            {{ participant.get_invitation_status_display }}
+                        </span>
+                    </p>
 
-                <p>{{ participant.user.email }}</p>
+                    <p class="participant-email">
+                        {{ participant.user.email }}
+                    </p>
+                </div>
 
                 {% if participant.user == user and participant.invitation_status == "PND" %}
-                    <div class="invitation-actions">
-                        <form action="{% url 'meeting:accept-invitation' participant.id %}" method="post">
+                    <div class="participant-actions">
+                        <form class="participant-action-form" action="{% url 'meeting:accept-invitation' participant.id %}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="next" value="{{ request.path }}">
-                            <button type="submit">Accept</button>
+                            <button type="submit" class="participant-btn accept-btn">Accept</button>
                         </form>
 
-                        <form action="{% url 'meeting:decline-invitation' participant.id %}" method="post">
+                        <form class="participant-action-form" action="{% url 'meeting:decline-invitation' participant.id %}" method="post">
                             {% csrf_token %}
                             <input type="hidden" name="next" value="{{ request.path }}">
-                            <button type="submit" class="btn danger">Decline</button>
+                            <button type="submit" class="participant-btn decline-btn">Decline</button>
                         </form>
                     </div>
                 {% endif %}
@@ -55,5 +61,6 @@
             <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
         </div>
     {% endif %}
-</section>
+</div>
+
 {% endblock %}
