@@ -92,6 +92,11 @@ LOGIN_REDIRECT_URL = "meeting:index"
 LOGOUT_REDIRECT_URL = "login"
 LOGIN_URL = "login"
 
+CELERY_BROKER_URL = "redis://redis:6379/0"
+CELERY_RESULT_BACKEND = "redis://redis:6379/0"
+DEFAULT_FROM_EMAIL = "MeetShift <noreply@meetshift.local>"
+EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
 
 # Password validation
 # https://docs.djangoproject.com/en/5.2/ref/settings/#auth-password-validators

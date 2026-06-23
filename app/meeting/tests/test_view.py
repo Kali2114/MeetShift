@@ -4,6 +4,7 @@ Tests for meeting views.
 
 from datetime import timedelta
 from http import HTTPStatus
+from unittest.mock import patch
 
 from core.models import Meeting, Notification
 from core.tests import utils
@@ -532,3 +533,36 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertTrue(Notification.objects.filter(user=self.participant).exists())
+
+    @patch("meeting.views.send_invitation_email_task.delay")
+    def test_invite_participant_sends_email_task(self, mock_send_email_task):
+        """Test invite participant starts async invitation email task."""
+        meeting = utils.create_meeting(organizer=self.user)
+        payload = {
+            "users": [self.participant.id],
+        }
+
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        mock_send_email_task.assert_called_once_with(
+            self.participant.email,
+            meeting.title,
+        )
+
+    @patch("meeting.views.send_invitation_email_task.delay")
+    def test_invite_multiple_participants_sends_email_tasks(self, mock_send_email_task):
+        """Test invite multiple participants starts email task for each user."""
+        meeting = utils.create_meeting(organizer=self.user)
+        second_participant = utils.create_user(
+            name="second_participant",
+            email="second@example.com",
+        )
+        payload = {
+            "users": [self.participant.id, second_participant.id],
+        }
+
+        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertEqual(mock_send_email_task.call_count, 2)

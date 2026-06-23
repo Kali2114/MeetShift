@@ -3,6 +3,7 @@ Views for meeting app.
 """
 
 from core.models import Meeting, MeetingParticipant, Notification
+from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.shortcuts import get_object_or_404, redirect
@@ -129,6 +130,7 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
                 user=user,
                 message=f"You have been invited to meeting: {self.meeting}",
             )
+            send_invitation_email_task.delay(user.email, self.meeting.title)
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
 
