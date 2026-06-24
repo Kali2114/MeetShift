@@ -1,258 +1,233 @@
 # 🚀 MeetShift
 
-**MeetShift** is a Django-based web application designed to simplify meeting organization, scheduling, and rescheduling through a structured workflow.
+![Checks](https://github.com/Kali2114/MeetShift/actions/workflows/checks.yml/badge.svg)
+![Coverage](https://img.shields.io/badge/coverage-100%25-brightgreen)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Django](https://img.shields.io/badge/Django-5.x-green)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-blue)
+![Docker](https://img.shields.io/badge/Docker-ready-blue)
 
-The application allows users to create meetings, invite participants, propose multiple time slots, collect responses, and finalize the best possible meeting time.
+MeetShift is a Django-based meeting management platform that helps users organize meetings, manage participants, handle invitations, and coordinate scheduling in a structured way.
 
----
-
-## 🧠 Project Overview
-
-Scheduling meetings is often chaotic:
-- people suggest different times  
-- responses are scattered  
-- final decisions are unclear  
-- rescheduling becomes messy  
-
-👉 **MeetShift solves this problem** by providing a centralized system where the entire meeting lifecycle is managed in one place.
+The project was built to demonstrate backend development, testing practices, CI/CD automation, asynchronous task processing, and modern deployment workflows.
 
 ---
 
-## 🎯 Key Features (MVP)
+# ✨ Features
 
-### 🔐 Authentication
-- User registration  
-- Login / logout  
-- Access control  
+## 🔐 Authentication & Accounts
 
-### 📅 Meeting Management
-- Create meetings  
-- Edit and delete meetings  
-- View meeting details  
-- List user-created meetings  
-- List meetings where the user is a participant  
+* User registration
+* Login / Logout
+* Password change
+* Password reset via email
+* Email confirmation after registration
+* Account settings
+* Account deletion
 
-### 👥 Participants
-- Invite users  
-- Remove participants  
-- Organizer vs participants  
+## 👤 User Profiles
 
-### ⏳ Scheduling
-- Multiple time slot proposals  
-- Participant responses:
-  - ✅ Accepted  
-  - ❌ Rejected  
-  - 🤔 Maybe  
+* Public user profiles
+* Profile editing
+* Avatar uploads
+* User bio
 
-### ✔️ Final Decision
-- Organizer selects final date  
-- Meeting becomes confirmed  
+## 📅 Meeting Management
 
-### 🔄 Rescheduling
-- Reopen scheduling  
-- Add new proposals  
-- Collect responses again  
-- Update final date  
+* Create meetings
+* Edit meetings
+* Delete meetings
+* Meeting details view
+* Meeting list view
+
+## 👥 Participant Management
+
+* Invite participants
+* Accept invitations
+* Decline invitations
+* Invitation status tracking
+* Organizer permissions
+
+## 🔔 Notification System
+
+* Meeting notifications
+* Unread notification counter
+* Mark notifications as read
+* Notification history
+
+## 📧 Email System
+
+* Registration confirmation emails
+* Asynchronous invitation emails
+* Celery + Redis integration
+
+## 🧪 Testing & Quality
+
+* Test Driven Development (TDD)
+* 100% test coverage
+* Ruff linting
+* Black formatting
+* Pre-commit hooks
+
+## ⚙️ CI/CD
+
+* GitHub Actions
+* Automated testing
+* Automated linting
+* Docker image build workflow
 
 ---
 
-## 🏗️ Tech Stack
+# 🏗️ Tech Stack
 
-### Backend
-- Python  
-- Django  
+## Backend
 
-### Database
-- PostgreSQL  
+* Python 3.12
+* Django 5
 
-### Frontend (MVP)
-- Django Templates  
-- HTML / CSS / JavaScript  
+## Database
 
-### Dev Tools
-- Docker  
-- Docker Compose  
-- Git & GitHub  
-- Ruff  
-- Black  
-- pre-commit  
-- GitHub Actions  
+* PostgreSQL
+
+## Task Queue
+
+* Celery
+* Redis
+
+## Frontend
+
+* Django Templates
+* HTML
+* CSS
+* JavaScript
+
+## DevOps
+
+* Docker
+* Docker Compose
+* GitHub Actions
 
 ---
 
-## 📦 Project Structure
+# 📊 Project Architecture
 
+```text
+User
+  │
+  ▼
+Django Application
+  │
+  ├── PostgreSQL
+  │
+  ├── Celery
+  │
+  └── Redis
 ```
-meetshift/
-├── app/
-│   ├── manage.py
-│   ├── config/
-│   ├── users/
-│   ├── meetings/
-│   ├── templates/
-│   ├── static/
-│   └── tests/
-├── docker/
-├── .github/
-│   └── workflows/
-│       └── ci.yml
-├── docker-compose.yml
-├── requirements.txt
-├── .env
-├── .env.example
-├── .pre-commit-config.yaml
-├── .gitignore
-└── README.md
+
+CI/CD Pipeline:
+
+```text
+Git Push
+   │
+   ▼
+GitHub Actions
+   │
+   ├── Ruff
+   ├── Black
+   ├── Tests
+   └── Docker Build
 ```
 
 ---
 
-## 🐳 Running the Project (Docker)
+# 🐳 Running the Project
 
+## Clone Repository
+
+```bash
+git clone https://github.com/Kali2114/MeetShift.git
+cd MeetShift
 ```
-docker-compose up --build
+
+## Start Containers
+
+```bash
+docker compose up --build
+```
+
+## Run Tests
+
+```bash
+docker compose run --rm app sh -c "python manage.py test"
+```
+
+## Coverage
+
+```bash
+docker compose run --rm app sh -c "coverage run manage.py test"
+docker compose run --rm app sh -c "coverage report"
 ```
 
 ---
 
-## ⚙️ Environment Variables
+# ⚙️ Environment Variables
 
-Example `.env` file:
+Example:
 
-```
+```env
 DEBUG=True
 SECRET_KEY=your_secret_key
-POSTGRES_DB=meetshift
-POSTGRES_USER=postgres
-POSTGRES_PASSWORD=postgres
-POSTGRES_HOST=db
-POSTGRES_PORT=5432
+
+DB_HOST=db
+DB_NAME=meetshift
+DB_USER=postgres
+DB_PASS=postgres
+DB_PORT=5432
+
+EMAIL_HOST=
+EMAIL_PORT=
+EMAIL_HOST_USER=
+EMAIL_HOST_PASSWORD=
 ```
 
 ---
 
-## 🧱 Core Models (Concept)
+# 📌 Roadmap
 
-### 👤 User
-Django user model (customizable)
+## In Progress
 
-### 📅 Meeting
-- organizer  
-- title  
-- description  
-- status  
-- final date  
+* AWS Deployment
+* Docker Hub Integration
+* Automated Production Deployment
+* Direct Messaging System
+* Monitoring & Observability
 
-### 🤝 MeetingParticipant
-Relation between user and meeting  
+## Planned
 
-### ⏰ TimeSlotProposal
-Proposed meeting times  
-
-### 📊 TimeSlotResponse
-User responses to proposals  
+* Prometheus
+* Grafana
+* Google Calendar Integration
+* REST API
+* Mobile-Friendly UI
 
 ---
 
-## 🔄 Meeting Lifecycle
+# 🎯 What This Project Demonstrates
 
-- Draft  
-- Pending  
-- Confirmed  
-- Rescheduling  
-- Cancelled  
-- Completed  
-
----
-
-## 🔐 Permissions
-
-### Organizer
-- manage meeting  
-- invite/remove participants  
-- confirm final date  
-- start rescheduling  
-
-### Participant
-- view meeting  
-- respond to proposals  
+* Django application architecture
+* Authentication and authorization
+* Relational database modeling
+* Background task processing
+* Email workflows
+* Test Driven Development
+* CI/CD pipelines
+* Dockerized development workflow
+* Production deployment preparation
 
 ---
 
-## 🧪 Testing Strategy
+# 👨‍💻 Author
 
-Tests will cover:
-- models  
-- views  
-- permissions  
-- business logic  
-- scheduling flow  
+**Kamil Kalicki**
 
----
-
-## ⚙️ Code Quality & pre-commit
-
-```
-pip install pre-commit
-pre-commit install
-pre-commit run --all-files
-```
-
----
-
-## ⚙️ CI/CD (GitHub Actions)
-
-Pipeline includes:
-- install dependencies  
-- run linters (ruff)  
-- check formatting (black)  
-- run tests  
-
-Triggers:
-- push  
-- pull request  
-
----
-
-## 🛣️ Development Roadmap
-
-- Phase 1: setup + docker + postgres  
-- Phase 2: authentication  
-- Phase 3: meeting CRUD  
-- Phase 4: participants  
-- Phase 5: time slots  
-- Phase 6: responses  
-- Phase 7: final date  
-- Phase 8: rescheduling  
-- Phase 9: tests + refactor  
-
----
-
-## 📌 Future Improvements
-
-- Email notifications  
-- Calendar UI  
-- Google Calendar integration  
-- REST API  
-- Mobile support  
-- Smart scheduling  
-- Timezone support  
-
----
-
-## 💡 Why This Project?
-
-This is more than a CRUD app.
-
-It demonstrates:
-- business logic design  
-- state management  
-- relational modeling  
-- permissions handling  
-- real-world problem solving  
-
----
-
-## 👨‍💻 Author
-
-Portfolio project built with Django to demonstrate backend and DevOps skills.
+Backend Developer focused on Python, Django, FastAPI, Docker, CI/CD and AWS.
