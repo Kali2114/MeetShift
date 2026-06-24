@@ -34,6 +34,7 @@ class UserRegisterForm(forms.ModelForm):
             name=self.cleaned_data["name"],
         )
         user.set_password(self.cleaned_data["password"])
+        user.is_active = False
 
         if commit:
             user.save()

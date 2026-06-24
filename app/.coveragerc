@@ -5,3 +5,7 @@ omit =
     manage.py
     config/settings.py
     config/urls.py
+    user/utils.py
+    meeting/utils.py
+    core/utils.py
+    core/tasks.py

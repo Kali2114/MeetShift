@@ -106,6 +106,23 @@ class UserRegisterFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
 
+    def test_new_user_is_active_false(self):
+        """Test new user is_active field is false."""
+        form = UserRegisterForm(
+            data={
+                "email": "test@example.com",
+                "name": "testuser",
+                "password": "testpass123",
+                "password_confirm": "testpass123",
+            }
+        )
+
+        self.assertTrue(form.is_valid())
+
+        user = form.save()
+
+        self.assertFalse(user.is_active)
+
 
 class UserProfileFormTests(TestCase):
     """Test user profile form."""

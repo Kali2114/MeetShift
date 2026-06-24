@@ -1,7 +1,12 @@
-from core.models import Notification, UserProfile
+from core.models import Notification, User, UserProfile
+from core.tasks import send_activation_email_task
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.contrib.auth.tokens import default_token_generator
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 from django.views.generic import (
     CreateView,
     DeleteView,
@@ -12,6 +17,7 @@ from django.views.generic import (
     View,
 )
 from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
+from user.utils import build_activation_link
 
 
 class RegisterView(CreateView):
@@ -20,6 +26,19 @@ class RegisterView(CreateView):
     form_class = UserRegisterForm
     template_name = "registration/register.html"
     success_url = reverse_lazy("login")
+
+    def form_valid(self, form):
+        """Create inactive user and send activation email."""
+        response = super().form_valid(form)
+        activation_link = build_activation_link(self.request, self.object)
+        send_activation_email_task.delay(self.object.email, activation_link)
+
+        messages.success(
+            self.request,
+            "Account created. Check your email to activate your account.",
+        )
+
+        return response
 
 
 class UserProfileView(LoginRequiredMixin, DetailView):
@@ -111,3 +130,21 @@ class NotificationListView(LoginRequiredMixin, ListView):
         return Notification.objects.filter(user=self.request.user).order_by(
             "-created_at"
         )
+
+
+class ActivateAccountView(View):
+    """Activate user account for email link."""
+
+    def get(self, request, uidb64, token):
+        """Activate user if token is valid."""
+        try:
+            user_id = force_str(urlsafe_base64_decode(uidb64))
+            user = User.objects.get(pk=user_id)
+        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+            user = None
+
+        if user is not None and default_token_generator.check_token(user, token):
+            user.is_active = True
+            user.save(update_fields=["is_active"])
+
+        return redirect("login")

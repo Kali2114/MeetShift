@@ -4,12 +4,17 @@ Tests for user views.
 
 import tempfile
 from http import HTTPStatus
+from unittest.mock import patch
 
 from core.models import User
 from core.tests import utils
+from django.contrib.auth.tokens import default_token_generator
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import TestCase, override_settings
 from django.urls import reverse
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from user.utils import get_activate_account_url
 
 REGISTER_URL = reverse("user:register")
 USER_PROFILE_URL = reverse("user:profile")
@@ -117,6 +122,80 @@ class PublicUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertRedirects(res, f"{reverse('login')}?next={NOTIFICATION_LIST_URL}")
+
+    def test_register_view_creates_inactive_user(self):
+        """Test register view creates inactive user."""
+        payload = {
+            "email": "test@example.com",
+            "name": "testuser",
+            "password": "testpass123",
+            "password_confirm": "testpass123",
+        }
+
+        res = self.client.post(REGISTER_URL, payload)
+
+        user = User.objects.get(email=payload["email"])
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertFalse(user.is_active)
+
+    @patch("user.views.send_activation_email_task.delay")
+    def test_register_view_sends_activation_email_task(self, mock_send_activation_task):
+        """Test register view sends activation email task."""
+        payload = {
+            "email": "test@example.com",
+            "name": "testuser",
+            "password": "testpass123",
+            "password_confirm": "testpass123",
+        }
+
+        res = self.client.post(REGISTER_URL, payload)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        mock_send_activation_task.assert_called_once()
+
+    def test_activate_account_success(self):
+        """Test user account can be activated with valid token."""
+        user = utils.create_user(
+            email="inactive@example.com",
+            name="inactive",
+        )
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+        token = default_token_generator.make_token(user)
+
+        res = self.client.get(get_activate_account_url(uidb64, token))
+
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(user.is_active)
+
+    def test_activate_account_invalid_token(self):
+        """Test user account is not activated with invalid token."""
+        user = utils.create_user(
+            email="inactive@example.com",
+            name="inactive",
+        )
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        uidb64 = urlsafe_base64_encode(force_bytes(user.pk))
+
+        res = self.client.get(get_activate_account_url(uidb64, "bad-token"))
+
+        user.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertFalse(user.is_active)
+
+    def test_activate_account_invalid_uid(self):
+        """Test invalid uid does not activate account."""
+        res = self.client.get(get_activate_account_url("bad-uid", "bad-token"))
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
 
 
 class PrivateUserViewsTests(TestCase):

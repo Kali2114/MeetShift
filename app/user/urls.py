@@ -85,4 +85,9 @@ urlpatterns = [
         views.NotificationListView.as_view(),
         name="notification-list",
     ),
+    path(
+        "activate/<uidb64>/<token>/",
+        views.ActivateAccountView.as_view(),
+        name="activate-account",
+    ),
 ]
