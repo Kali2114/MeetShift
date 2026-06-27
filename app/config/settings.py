@@ -144,3 +144,55 @@ MEDIA_ROOT = BASE_DIR / "media"
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{levelname} {asctime} {name} {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "{levelname} {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+        },
+        "file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_DIR / "meetshift.log",
+            "formatter": "verbose",
+        },
+        "errors_file": {
+            "class": "logging.FileHandler",
+            "filename": LOG_DIR / "errors.log",
+            "formatter": "verbose",
+            "level": "ERROR",
+        },
+    },
+    "loggers": {
+        "django": {
+            "handlers": ["console", "file", "errors_file"],
+            "level": "INFO",
+            "propagate": True,
+        },
+        "meeting": {
+            "handlers": ["console", "file", "errors_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "user": {
+            "handlers": ["console", "file", "errors_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+    },
+}

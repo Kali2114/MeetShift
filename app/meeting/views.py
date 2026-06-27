@@ -2,6 +2,8 @@
 Views for meeting app.
 """
 
+import logging
+
 from core.models import Meeting, MeetingParticipant, Notification
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
@@ -20,6 +22,8 @@ from django.views.generic import (
 )
 from meeting.forms import InviteParticipantForm, MeetingForm
 from meeting.utils import user_has_meeting_conflict, user_meetings_queryset
+
+logger = logging.getLogger(__name__)
 
 
 class IndexView(LoginRequiredMixin, TemplateView):
@@ -69,7 +73,16 @@ class CreateMeetingView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         """Set organizer as current user."""
         form.instance.organizer = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+
+        logger.info(
+            "Meeting created: meeting_id=%s organizer_id=%s organizer_email=%s",
+            self.object.id,
+            self.request.user.id,
+            self.request.user.email,
+        )
+
+        return response
 
     def get_success_url(self):
         """Return invite participant after creating meeting."""
@@ -120,7 +133,9 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
 
     def form_valid(self, form):
         """Invite user to meeting."""
-        for user in form.cleaned_data["users"]:
+        invited_users = form.cleaned_data["users"]
+
+        for user in invited_users:
             MeetingParticipant.objects.create(
                 meeting=self.meeting,
                 user=user,
@@ -131,6 +146,15 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
                 message=f"You have been invited to meeting: {self.meeting}",
             )
             send_invitation_email_task.delay(user.email, self.meeting.title)
+
+            logger.info(
+                "User invited to meeting: meeting_id=%s organizer_id=%s "
+                "invited_user_id=%s invited_user_email=%s",
+                self.meeting.id,
+                self.request.user.id,
+                user.id,
+                user.email,
+            )
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
 
@@ -152,12 +176,25 @@ class AcceptInvitationView(LoginRequiredMixin, View):
             user=request.user,
         )
         if user_has_meeting_conflict(request.user, invitation.meeting):
+            logger.warning(
+                "Invitation accept blocked by conflict: meeting_id=%s "
+                "user_id=%s invitation_id=%s",
+                invitation.meeting.id,
+                request.user.id,
+                invitation.id,
+            )
             messages.error(
                 request, "You already have another accepted meeting at this time."
             )
             return redirect(request.POST.get("next", "meeting:invitations"))
         invitation.invitation_status = "ACC"
         invitation.save()
+        logger.info(
+            "Invitation accepted: meeting_id=%s user_id=%s invitation_id=%s",
+            invitation.meeting.id,
+            request.user.id,
+            invitation.id,
+        )
 
         return redirect(request.POST.get("next", "meeting:invitations"))
 
@@ -174,6 +211,12 @@ class DeclineInvitationView(LoginRequiredMixin, View):
         )
         invitation.invitation_status = "DEC"
         invitation.save()
+        logger.info(
+            "Invitation declined: meeting_id=%s user_id=%s invitation_id=%s",
+            invitation.meeting.id,
+            request.user.id,
+            invitation.id,
+        )
 
         return redirect(request.POST.get("next", "meeting:invitations"))
 

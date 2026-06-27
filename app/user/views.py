@@ -1,3 +1,5 @@
+import logging
+
 from core.models import Notification, User, UserProfile
 from core.tasks import send_activation_email_task
 from django.contrib import messages
@@ -19,6 +21,8 @@ from django.views.generic import (
 from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
 from user.utils import build_activation_link
 
+logger = logging.getLogger(__name__)
+
 
 class RegisterView(CreateView):
     """Register new user."""
@@ -32,6 +36,12 @@ class RegisterView(CreateView):
         response = super().form_valid(form)
         activation_link = build_activation_link(self.request, self.object)
         send_activation_email_task.delay(self.object.email, activation_link)
+
+        logger.info(
+            "User registered and activation email queued: user_id=%s email=%s",
+            self.object.id,
+            self.object.email,
+        )
 
         messages.success(
             self.request,
@@ -59,6 +69,17 @@ class UserProfileUpdateView(LoginRequiredMixin, UpdateView):
     form_class = UserProfileForm
     template_name = "user/user_edit_profile.html"
     success_url = reverse_lazy("user:profile")
+
+    def form_valid(self, form):
+        """Log profile update."""
+        response = super().form_valid(form)
+
+        logger.info(
+            "User profile updated: user_id=%s",
+            self.request.user.id,
+        )
+
+        return response
 
     def get_object(self, queryset=None):
         """Return current user profile."""
@@ -90,6 +111,18 @@ class UserUpdateView(LoginRequiredMixin, UpdateView):
     template_name = "user/user_edit.html"
     success_url = reverse_lazy("user:account-settings")
 
+    def form_valid(self, form):
+        """Log user account update."""
+        response = super().form_valid(form)
+
+        logger.info(
+            "User account updated: user_id=%s email=%s",
+            self.request.user.id,
+            self.request.user.email,
+        )
+
+        return response
+
     def get_object(self, queryset=None):
         """Return current user."""
         return self.request.user
@@ -105,6 +138,16 @@ class UserDeleteView(LoginRequiredMixin, DeleteView):
         """Return current user."""
         return self.request.user
 
+    def form_valid(self, form):
+        """Log user account deletion."""
+        logger.warning(
+            "User account deleted: user_id=%s email=%s",
+            self.request.user.id,
+            self.request.user.email,
+        )
+
+        return super().form_valid(form)
+
 
 class NotificationReadView(LoginRequiredMixin, View):
     """Mark notifications as read and redirect to meeting details."""
@@ -114,6 +157,13 @@ class NotificationReadView(LoginRequiredMixin, View):
         notification = get_object_or_404(Notification, pk=pk, user=self.request.user)
         notification.is_read = True
         notification.save(update_fields=["is_read"])
+
+        logger.info(
+            "Notification marked as read: notification_id=%s user_id=%s meeting_id=%s",
+            notification.id,
+            request.user.id,
+            notification.meeting.id,
+        )
 
         return redirect("meeting:detail-meeting", pk=notification.meeting.id)
 
@@ -146,10 +196,20 @@ class ActivateAccountView(View):
         if user is not None and default_token_generator.check_token(user, token):
             user.is_active = True
             user.save(update_fields=["is_active"])
+
+            logger.info(
+                "User account activated: user_id=%s email=%s",
+                user.id,
+                user.email,
+            )
             messages.success(
                 request, "Your account has been activated. You can now log in."
             )
         else:
             messages.error(request, "Activation link is invalid.")
+            logger.warning(
+                "Invalid activation link used: uidb64=%s",
+                uidb64,
+            )
 
         return redirect("login")
