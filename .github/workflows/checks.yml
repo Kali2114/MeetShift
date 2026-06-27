@@ -42,7 +42,7 @@ jobs:
         run: docker compose run --rm app sh -c 'python manage.py wait_for_db && python manage.py makemigrations --check --dry-run'
 
       - name: Run tests with coverage
-        run: docker compose run --rm app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov"
+        run: docker compose run --rm --user root app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov"
 
   build-image:
     runs-on: ubuntu-latest
