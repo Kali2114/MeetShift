@@ -42,12 +42,13 @@ jobs:
         run: docker compose run --rm app sh -c 'python manage.py wait_for_db && python manage.py makemigrations --check --dry-run'
 
       - name: Run tests with coverage
-        run: docker compose run --rm --user root app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov"
+        run: docker compose run --rm --user root app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov && COVERAGE_FILE=/coverage/.coverage coverage xml -o /coverage/coverage.xml"
 
       - name: Copy coverage report from Docker volume
         run: |
           docker create --name coverage-copy -v meetshift_coverage-data:/coverage alpine
           docker cp coverage-copy:/coverage/htmlcov ./htmlcov
+          docker cp coverage-copy:/coverage/coverage.xml ./coverage.xml
           docker rm coverage-copy
 
       - name: Upload coverage HTML report
@@ -55,6 +56,12 @@ jobs:
         with:
           name: coverage-html-report
           path: htmlcov/
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: false
 
   build-image:
     runs-on: ubuntu-latest
