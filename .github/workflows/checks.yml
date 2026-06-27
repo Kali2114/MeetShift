@@ -42,16 +42,7 @@ jobs:
         run: docker compose run --rm app sh -c 'python manage.py wait_for_db && python manage.py makemigrations --check --dry-run'
 
       - name: Run tests with coverage
-        run: docker compose run --rm app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/tmp/.coverage coverage run manage.py test && COVERAGE_FILE=/tmp/.coverage coverage report && COVERAGE_FILE=/tmp/.coverage coverage html -d /tmp/htmlcov"
-
-      - name: Copy coverage report from container
-        run: docker compose run --rm app sh -c "cp -r /tmp/htmlcov /app/htmlcov"
-
-      - name: Upload coverage HTML report
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-html-report
-          path: app/htmlcov/
+        run: docker compose run --rm app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov"
 
   build-image:
     runs-on: ubuntu-latest
