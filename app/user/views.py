@@ -146,5 +146,10 @@ class ActivateAccountView(View):
         if user is not None and default_token_generator.check_token(user, token):
             user.is_active = True
             user.save(update_fields=["is_active"])
+            messages.success(
+                request, "Your account has been activated. You can now log in."
+            )
+        else:
+            messages.error(request, "Activation link is invalid.")
 
         return redirect("login")

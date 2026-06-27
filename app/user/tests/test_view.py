@@ -169,7 +169,12 @@ class PublicUserViewsTests(TestCase):
         res = self.client.get(get_activate_account_url(uidb64, token))
 
         user.refresh_from_db()
+        messages = list(res.wsgi_request._messages)
 
+        self.assertEqual(
+            str(messages[0]),
+            "Your account has been activated. You can now log in.",
+        )
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertTrue(user.is_active)
 
@@ -188,6 +193,12 @@ class PublicUserViewsTests(TestCase):
 
         user.refresh_from_db()
 
+        messages = list(res.wsgi_request._messages)
+
+        self.assertEqual(
+            str(messages[0]),
+            "Activation link is invalid.",
+        )
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertFalse(user.is_active)
 
