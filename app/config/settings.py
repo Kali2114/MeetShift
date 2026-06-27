@@ -157,6 +157,28 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 LOG_DIR = BASE_DIR / "logs"
 
 IS_CI = os.environ.get("GITHUB_ACTIONS") == "true"
+
+BASE_HANDLERS = {
+    "console": {
+        "class": "logging.StreamHandler",
+        "formatter": "simple",
+    },
+}
+
+FILE_HANDLERS = {
+    "file": {
+        "class": "logging.FileHandler",
+        "filename": LOG_DIR / "meetshift.log",
+        "formatter": "verbose",
+    },
+    "errors_file": {
+        "class": "logging.FileHandler",
+        "filename": LOG_DIR / "errors.log",
+        "formatter": "verbose",
+        "level": "ERROR",
+    },
+}
+
 LOG_HANDLERS = ["console"] if IS_CI else ["console", "file", "errors_file"]
 
 LOGGING = {
@@ -172,23 +194,7 @@ LOGGING = {
             "style": "{",
         },
     },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "simple",
-        },
-        "file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_DIR / "meetshift.log",
-            "formatter": "verbose",
-        },
-        "errors_file": {
-            "class": "logging.FileHandler",
-            "filename": LOG_DIR / "errors.log",
-            "formatter": "verbose",
-            "level": "ERROR",
-        },
-    },
+    "handlers": BASE_HANDLERS if IS_CI else {**BASE_HANDLERS, **FILE_HANDLERS},
     "loggers": {
         "django": {
             "handlers": LOG_HANDLERS,
