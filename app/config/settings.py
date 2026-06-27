@@ -94,8 +94,6 @@ LOGIN_URL = "login"
 
 CELERY_BROKER_URL = "redis://redis:6379/0"
 CELERY_RESULT_BACKEND = "redis://redis:6379/0"
-DEFAULT_FROM_EMAIL = "MeetShift <noreply@meetshift.local>"
-EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 
 
 # Password validation
@@ -131,6 +129,15 @@ USE_TZ = True
 
 AUTH_USER_MODEL = "core.User"
 
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+EMAIL_HOST = os.environ.get("EMAIL_HOST", "smtp.gmail.com")
+EMAIL_PORT = int(os.environ.get("EMAIL_PORT", 587))
+EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS") == "True"
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", EMAIL_HOST_USER)
+
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
@@ -146,7 +153,7 @@ MEDIA_ROOT = BASE_DIR / "media"
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOG_DIR = BASE_DIR / "logs"
-LOG_DIR.mkdir(exist_ok=True)
+LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 LOGGING = {
     "version": 1,
@@ -190,6 +197,11 @@ LOGGING = {
             "propagate": False,
         },
         "user": {
+            "handlers": ["console", "file", "errors_file"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        "core": {
             "handlers": ["console", "file", "errors_file"],
             "level": "INFO",
             "propagate": False,
