@@ -16,6 +16,8 @@ jobs:
       POSTGRES_DB: ${{ secrets.DB_NAME }}
       POSTGRES_USER: ${{ secrets.DB_USER }}
       POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
+      EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
+      EMAIL_PORT: 587
 
     steps:
       - name: Checkout repository
