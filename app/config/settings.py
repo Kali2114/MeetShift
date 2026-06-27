@@ -156,6 +156,9 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 LOG_DIR = BASE_DIR / "logs"
 
+IS_CI = os.environ.get("GITHUB_ACTIONS") == "true"
+LOG_HANDLERS = ["console"] if IS_CI else ["console", "file", "errors_file"]
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -188,22 +191,22 @@ LOGGING = {
     },
     "loggers": {
         "django": {
-            "handlers": ["console", "file", "errors_file"],
+            "handlers": LOG_HANDLERS,
             "level": "INFO",
             "propagate": True,
         },
         "meeting": {
-            "handlers": ["console", "file", "errors_file"],
+            "handlers": LOG_HANDLERS,
             "level": "INFO",
             "propagate": False,
         },
         "user": {
-            "handlers": ["console", "file", "errors_file"],
+            "handlers": LOG_HANDLERS,
             "level": "INFO",
             "propagate": False,
         },
         "core": {
-            "handlers": ["console", "file", "errors_file"],
+            "handlers": LOG_HANDLERS,
             "level": "INFO",
             "propagate": False,
         },
