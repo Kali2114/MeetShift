@@ -44,6 +44,18 @@ jobs:
       - name: Run tests with coverage
         run: docker compose run --rm --user root app sh -c "python manage.py wait_for_db && COVERAGE_FILE=/coverage/.coverage coverage run manage.py test && COVERAGE_FILE=/coverage/.coverage coverage report && COVERAGE_FILE=/coverage/.coverage coverage html -d /coverage/htmlcov"
 
+      - name: Copy coverage report from Docker volume
+        run: |
+          docker create --name coverage-copy -v meetshift_coverage-data:/coverage alpine
+          docker cp coverage-copy:/coverage/htmlcov ./htmlcov
+          docker rm coverage-copy
+
+      - name: Upload coverage HTML report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-html-report
+          path: htmlcov/
+
   build-image:
     runs-on: ubuntu-latest
     needs: test-lint
