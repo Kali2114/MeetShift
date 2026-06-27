@@ -4,6 +4,7 @@ Forms for user app.
 
 from core.models import User, UserProfile
 from django import forms
+from django.contrib.auth.forms import AuthenticationForm
 
 
 class UserRegisterForm(forms.ModelForm):
@@ -56,3 +57,31 @@ class UserEditForm(forms.ModelForm):
     class Meta:
         model = User
         fields = ["name"]
+
+
+class UserAuthenticationForm(AuthenticationForm):
+    """Form for user authentication."""
+
+    inactive_error = (
+        "Your account is inactive. Please check your email and activate your account."
+    )
+
+    def clean(self):
+        """Validate user credentials and active status."""
+        username = self.cleaned_data.get("username")
+        password = self.cleaned_data.get("password")
+
+        if username is not None and password:
+            try:
+                user = User.objects.get(email=username)
+            except User.DoesNotExist:
+                user = None
+
+            if (
+                user is not None
+                and user.check_password(password)
+                and not user.is_active
+            ):
+                raise forms.ValidationError(self.inactive_error)
+
+        return super().clean()

@@ -2,8 +2,14 @@
 Tests for user forms.
 """
 
+from core.tests import utils
 from django.test import TestCase
-from user.forms import UserEditForm, UserProfileForm, UserRegisterForm
+from user.forms import (
+    UserAuthenticationForm,
+    UserEditForm,
+    UserProfileForm,
+    UserRegisterForm,
+)
 
 
 class UserRegisterFormTests(TestCase):
@@ -172,3 +178,62 @@ class UserEditFormTests(TestCase):
         form = UserEditForm()
 
         self.assertEqual(list(form.fields), ["name"])
+
+
+class UserAuthenticationFormTests(TestCase):
+    """Test user authentication form."""
+
+    def test_inactive_user_login_is_invalid(self):
+        """Test inactive user cannot log in."""
+        user = utils.create_user(
+            email="inactive@example.com",
+            password="testpass123",
+        )
+        user.is_active = False
+        user.save(update_fields=["is_active"])
+
+        form = UserAuthenticationForm(
+            request=None,
+            data={
+                "username": user.email,
+                "password": "testpass123",
+            },
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn(
+            "Your account is inactive. "
+            "Please check your email and activate your account.",
+            form.errors["__all__"],
+        )
+
+    def test_authentication_form_with_unknown_user_is_invalid(self):
+        """Test authentication form is invalid for unknown user."""
+        form = UserAuthenticationForm(
+            request=None,
+            data={
+                "username": "unknown@example.com",
+                "password": "testpass123",
+            },
+        )
+
+        self.assertFalse(form.is_valid())
+
+    def test_active_user_login_is_valid(self):
+        """Test active user can log in."""
+        user = utils.create_user(
+            email="active@example.com",
+            password="testpass123",
+        )
+        user.is_active = True
+        user.save(update_fields=["is_active"])
+
+        form = UserAuthenticationForm(
+            request=None,
+            data={
+                "username": user.email,
+                "password": "testpass123",
+            },
+        )
+
+        self.assertTrue(form.is_valid())
