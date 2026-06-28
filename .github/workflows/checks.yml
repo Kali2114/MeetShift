@@ -8,6 +8,10 @@ jobs:
   test-lint:
     runs-on: ubuntu-latest
 
+    strategy:
+      matrix:
+        postgres-version: ["16.2-alpine3.19", "17-alpine"]
+
     env:
       DB_HOST: db
       DB_USER: ${{ secrets.DB_USER }}
@@ -18,6 +22,7 @@ jobs:
       POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
       EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
       EMAIL_PORT: 587
+      POSTGRES_IMAGE: postgres:${{ matrix.postgres-version }}
 
     steps:
       - name: Checkout repository
