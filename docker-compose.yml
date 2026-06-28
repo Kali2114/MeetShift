@@ -7,6 +7,8 @@ services:
     volumes:
       - ./app:/app
       - coverage-data:/coverage
+      - static-data:/app/staticfiles
+      - media-data:/app/media
     command: >
       sh -c " python manage.py wait_for_db &&
               python manage.py migrate &&
@@ -23,7 +25,7 @@ services:
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       - EMAIL_USE_TLS=${EMAIL_USE_TLS}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - GITHUB_ACTIONS=${GITHUB_ACTIONS}
+      - GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
     depends_on:
       - db
       - redis
@@ -46,6 +48,7 @@ services:
     command: celery -A config worker -l info
     volumes:
       - ./app:/app
+      - media-data:/app/media
     environment:
       - DB_HOST=${DB_HOST}
       - DB_NAME=${DB_NAME}
@@ -93,3 +96,5 @@ volumes:
   dev-db-data:
   coverage-data:
   grafana-data:
+  static-data:
+  media-data:
