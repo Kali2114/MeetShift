@@ -84,6 +84,15 @@ A production-oriented Django application demonstrating modern backend developmen
 - Docker image build
 - Docker Hub publishing
 
+## 📊 Monitoring
+
+- Prometheus metrics endpoint
+- Grafana dashboard provisioning
+- Django request monitoring
+- HTTP status monitoring
+- Response time tracking
+- CPU and memory usage metrics
+
 ---
 
 # 🏗️ Tech Stack
@@ -116,6 +125,9 @@ A production-oriented Django application demonstrating modern backend developmen
 - GitHub Actions
 - Docker Buildx
 - Codecov
+- Prometheus
+- Graphana
+- Provisioned monitoring dashboard
 
 ---
 
