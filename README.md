@@ -4,9 +4,10 @@
 [![codecov](https://codecov.io/github/Kali2114/MeetShift/graph/badge.svg?token=UZ4HIOYQY7)](https://codecov.io/github/Kali2114/MeetShift)
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Django](https://img.shields.io/badge/Django-5.x-092E20?logo=django)
-![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-336791?logo=postgresql)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%7C%2017-336791?logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)
 ![License](https://img.shields.io/github/license/Kali2114/MeetShift)
+![Matrix](https://img.shields.io/badge/CI%20matrix-PostgreSQL%2016%20%7C%2017-blue)
 
 A production-oriented Django application demonstrating modern backend development practices including Docker, CI/CD, automated testing, Celery, Redis, Codecov, and cloud deployment preparation.
 
