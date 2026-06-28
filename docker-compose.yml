@@ -58,11 +58,38 @@ services:
       - EMAIL_HOST_PASSWORD=${EMAIL_HOST_PASSWORD}
       - EMAIL_USE_TLS=${EMAIL_USE_TLS}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
-      - GITHUB_ACTIONS=${GITHUB_ACTIONS}
+      - GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
     depends_on:
       - redis
       - db
 
+  prometheus:
+    image: prom/prometheus
+
+    ports:
+      - "9090:9090"
+
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+
+    depends_on:
+      - app
+
+  grafana:
+    image: grafana/grafana-oss
+
+    ports:
+      - "3000:3000"
+
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/etc/grafana/dashboards
+
+    depends_on:
+      - prometheus
+
 volumes:
   dev-db-data:
   coverage-data:
+  grafana-data:

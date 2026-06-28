@@ -35,6 +35,7 @@ urlpatterns = [
     path("accounts/", include("django.contrib.auth.urls")),
     path("", include("meeting.urls")),
     path("user/", include("user.urls")),
+    path("", include("django_prometheus.urls")),
 ]
 
 
