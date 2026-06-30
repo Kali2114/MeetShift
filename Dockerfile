@@ -10,11 +10,14 @@ EXPOSE 8000
 
 RUN python -m venv /py && \
     /py/bin/pip install -r /tmp/requirements.txt && \
-    rm -rf /tmp && \
-    adduser -D -H django-user && \
-    chown -R django-user:django-user /app
+    rm -f /tmp/requirements.txt && \
+    adduser -D -h /home/django-user django-user && \
+    mkdir -p /app/staticfiles /app/media /app/logs /home/django-user /tmp && \
+    chmod 1777 /tmp && \
+    chown -R django-user:django-user /app /home/django-user
 
 ENV PATH="/py/bin:$PATH"
+ENV HOME=/home/django-user
 
 USER django-user
 
