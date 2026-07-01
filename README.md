@@ -6,257 +6,290 @@
 ![Django](https://img.shields.io/badge/Django-5.x-092E20?logo=django)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%7C%2017-336791?logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)
+![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?logo=amazonaws)
+![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?logo=prometheus)
+![Grafana](https://img.shields.io/badge/Grafana-Dashboard-F46800?logo=grafana)
 ![License](https://img.shields.io/github/license/Kali2114/MeetShift)
 ![Matrix](https://img.shields.io/badge/CI%20matrix-PostgreSQL%2016%20%7C%2017-blue)
 
-A production-oriented Django application demonstrating modern backend development practices including Docker, CI/CD, automated testing, Celery, Redis, Codecov, and cloud deployment preparation.
+> **Production-ready meeting scheduling application built with Django, Docker, AWS, and modern DevOps practices.**
+
+MeetShift is a production-ready meeting scheduling application that allows users to create meetings, invite participants, manage responses, and receive notifications.
+
+The project was built to simulate a real-world backend application, focusing not only on features but also on deployment, infrastructure, monitoring, testing, and DevOps practices.
+
+🌍 **Live Demo:** https://meetshift.org
+
+---
+
+# 📸 Screenshots
+
+> *(Coming soon)*
+
+- Home page
+- Meeting details
+- User profile
+- Notifications
+- Grafana dashboard
+- Production infrastructure
 
 ---
 
 # ✨ Features
 
-## 🔐 Authentication & Accounts
-
-- User registration
-- Login / Logout
-- Password change
-- Password reset via email
-- Email confirmation after registration
-- Account settings
-- Account deletion
-
-## 👤 User Profiles
-
-- Public user profiles
-- Profile editing
-- Avatar uploads
-- User bio
-
-## 📅 Meeting Management
-
-- Create meetings
-- Edit meetings
-- Delete meetings
-- Meeting details
-- Meeting list
-
-## 👥 Participant Management
-
-- Invite participants
-- Accept invitations
-- Decline invitations
-- Invitation status tracking
-- Organizer permissions
-
-## 🔔 Notification System
-
-- Meeting notifications
-- Unread notification counter
-- Mark notifications as read
-- Notification history
-
-## 📧 Email System
-
-- Registration confirmation emails
-- Asynchronous invitation emails
-- Celery + Redis integration
-
-## 🧪 Testing & Quality
-
-- Test Driven Development (TDD)
-- 100% test coverage
-- Ruff linting
-- Black formatting
-- Pre-commit hooks
-- Codecov integration
-
-## ⚙️ CI/CD
-
-- GitHub Actions
-- Black formatting checks
-- Ruff linting
-- Django system checks
-- Migration validation
-- Automated test suite
-- Coverage XML generation
-- Coverage HTML artifacts
-- Codecov reporting
-- Docker Buildx cache
-- Docker image build
-- Docker Hub publishing
-
-## 📊 Monitoring
-
-- Prometheus metrics endpoint
-- Grafana dashboard provisioning
-- Django request monitoring
-- HTTP status monitoring
-- Response time tracking
-- CPU and memory usage metrics
+- 🔐 Authentication & authorization
+- 👤 User profiles with avatar uploads
+- 📅 Meeting scheduling
+- 👥 Participant invitations
+- 🔔 Notification system
+- 📧 Email integration
+- 📂 Media uploads
+- 🗓 Calendar interface
+- ⚡ Background task processing with Celery
+- 🔒 HTTPS with Cloudflare
+- 📊 Production monitoring
+- 🐳 Dockerized deployment
 
 ---
 
-# 🏗️ Tech Stack
+# 🏗 Architecture
+
+```text
+                         Internet
+                              │
+                              ▼
+                      Cloudflare (HTTPS)
+                              │
+                              ▼
+                     AWS EC2 (Ubuntu)
+                              │
+                              ▼
+                           Nginx
+                              │
+                              ▼
+                         Gunicorn
+                              │
+                              ▼
+                            Django
+                     ┌────────┴────────┐
+                     ▼                 ▼
+               PostgreSQL          Redis
+                                        │
+                                        ▼
+                                     Celery
+
+                   Prometheus ─────► Grafana
+```
+
+---
+
+# 🛠 Tech Stack
 
 ## Backend
 
 - Python 3.12
-- Django 5
+- Django
+- Gunicorn
+- Celery
 
 ## Database
 
 - PostgreSQL
 
-## Background Tasks
+## Cache & Background Tasks
 
-- Celery
 - Redis
+- Celery
 
-## Frontend
-
-- Django Templates
-- HTML
-- CSS
-- JavaScript
-
-## DevOps
+## Infrastructure
 
 - Docker
 - Docker Compose
-- GitHub Actions
-- Docker Buildx
-- Codecov
+- AWS EC2
+- Nginx
+- Cloudflare
+
+## Monitoring
+
 - Prometheus
-- Graphana
-- Provisioned monitoring dashboard
+- Grafana
+
+## Testing
+
+- Django Test Framework
+- Coverage.py
+
+## Code Quality
+
+- Ruff
+- Black
+- pre-commit
+
+## Continuous Integration
+
+- GitHub Actions
 
 ---
 
-# 📊 Project Architecture
+# 🚀 Production Infrastructure
 
-```text
-                User
-                  │
-                  ▼
-          Django Application
-                  │
-     ┌────────────┼────────────┐
-     │            │            │
-     ▼            ▼            ▼
- PostgreSQL     Redis       Celery
-                  │
-                  ▼
-        Background Tasks
-```
+MeetShift is deployed on AWS using a production-ready Docker environment.
 
-## CI/CD Pipeline
+Infrastructure includes:
 
-```text
-Git Push
-    │
-    ▼
-GitHub Actions
-    │
-    ├── Black
-    ├── Ruff
-    ├── Django Check
-    ├── Migration Check
-    ├── Tests
-    ├── Coverage
-    ├── Upload HTML Artifact
-    ├── Codecov
-    └── Docker Build & Push
-```
+- AWS EC2
+- Docker Compose
+- Gunicorn WSGI server
+- Nginx reverse proxy
+- PostgreSQL
+- Redis
+- Celery workers
+- Cloudflare DNS
+- HTTPS (SSL)
+- Prometheus
+- Grafana
 
 ---
 
-# 🐳 Running the Project
+# 📊 Monitoring
 
-## Clone repository
+Application monitoring is powered by **Prometheus** and **Grafana**.
 
-```bash
-git clone https://github.com/Kali2114/MeetShift.git
-cd MeetShift
-```
+Collected metrics include:
 
-## Build containers
+- HTTP requests
+- Response status codes
+- Request throughput
+- Response time
+- Error rates
+- Application health
+
+Monitoring provides real-time insights into application performance and infrastructure.
+
+---
+
+# 🐳 Docker
+
+## Development
 
 ```bash
 docker compose up --build
 ```
 
-## Run tests
+## Production
 
 ```bash
-docker compose run --rm app sh -c "python manage.py test"
+docker compose -f docker-compose.prod.yml up -d
 ```
 
-## Coverage
+---
+
+# ⚙️ Local Installation
+
+Clone the repository
 
 ```bash
-docker compose run --rm app sh -c "coverage run manage.py test"
-docker compose run --rm app sh -c "coverage report"
-docker compose run --rm app sh -c "coverage html"
+git clone https://github.com/Kali2114/MeetShift.git
+```
+
+Go to the project
+
+```bash
+cd MeetShift
+```
+
+Create environment file
+
+```bash
+cp .env.example .env
+```
+
+Start the application
+
+```bash
+docker compose up --build
 ```
 
 ---
 
-# ⚙️ Environment Variables
+# 🧪 Testing
 
-```env
-DEBUG=True
+Run tests
 
-SECRET_KEY=
+```bash
+python manage.py test
+```
 
-DB_HOST=db
-DB_NAME=
-DB_USER=
-DB_PASS=
-DB_PORT=5432
+Run coverage
 
-EMAIL_HOST=
-EMAIL_PORT=
-EMAIL_HOST_USER=
-EMAIL_HOST_PASSWORD=
-EMAIL_USE_TLS=True
-DEFAULT_FROM_EMAIL=
+```bash
+coverage run manage.py test
+coverage report
+```
+
+Current test coverage is close to **100%**.
+
+---
+
+# 🔄 Continuous Integration
+
+GitHub Actions automatically performs:
+
+- Ruff linting
+- Black formatting check
+- Django tests
+- Coverage
+- Docker build validation
+- PostgreSQL matrix builds
+
+---
+
+# 📁 Project Structure
+
+```text
+MeetShift
+│
+├── app/
+├── monitoring/
+│   ├── grafana/
+│   └── prometheus.yml
+├── nginx/
+├── docker-compose.yml
+├── docker-compose.prod.yml
+├── requirements.txt
+└── README.md
 ```
 
 ---
 
-# 📌 Roadmap
+# 🛣 Roadmap
 
-## 🚧 In Progress
+## ✅ Completed
 
-- AWS EC2 deployment
-- Nginx reverse proxy
-- Prometheus monitoring
-- Grafana dashboards
-- Production logging
+- User authentication
+- User profiles
+- Avatar uploads
+- Meeting management
+- Invitations
+- Notifications
+- Docker
+- AWS deployment
+- HTTPS
+- Prometheus
+- Grafana
+- GitHub Actions
+- Production monitoring
 
-## 📋 Planned
+## 🚧 Planned
 
-- Google Calendar integration
-- Direct messaging
-- REST API
-- Mobile-friendly UI
-
----
-
-# 🎯 What This Project Demonstrates
-
-- Django application architecture
-- Authentication & authorization
-- Relational database modeling
-- Background task processing
-- Email workflows
-- Docker containerization
-- Docker image publishing
-- Test Driven Development
-- Continuous Integration
-- Code coverage reporting
-- Production-ready project structure
-- Cloud deployment preparation
+- Automated CI/CD deployment
+- Database backups
+- Centralized logging
+- Sentry integration
+- Performance optimization
+- Infrastructure improvements
+- API versioning
+- Release **v1.0.0**
 
 ---
 
@@ -264,4 +297,18 @@ DEFAULT_FROM_EMAIL=
 
 **Kamil Kalicki**
 
-Backend Developer focused on Python, Django, FastAPI, Docker, CI/CD and AWS.
+GitHub
+
+https://github.com/Kali2114
+
+LinkedIn
+
+*(coming soon)*
+
+---
+
+# ⭐ Support
+
+If you found this project interesting, consider giving it a ⭐ on GitHub!
+
+Feedback, suggestions, and contributions are always welcome.
