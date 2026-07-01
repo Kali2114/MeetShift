@@ -28,6 +28,10 @@ ALLOWED_HOSTS = os.environ.get(
     "localhost,127.0.0.1,app",
 ).split(",")
 
+CSRF_TRUSTED_ORIGINS = [
+    "https://meetshift.org",
+    "https://www.meetshift.org",
+]
 
 # Application definition
 
