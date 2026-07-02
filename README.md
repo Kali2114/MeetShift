@@ -524,6 +524,7 @@ MeetShift/
 - GitHub OpenID Connect authentication
 - AWS Systems Manager deployment
 - Production health check
+- First stable production release `v1.0.0`
 
 ### 🚧 Planned
 
@@ -533,9 +534,11 @@ MeetShift/
 - Resource usage alerts
 - Improved Loki dashboards
 - User interface polishing
-- Additional performance optimization
 - Production deployment rollback
-- Release `v1.0.0`
+- Real-time chat
+- Video meeting rooms
+- WebSocket-based notifications
+- Release `v1.1.0`
 
 ---
 
@@ -544,7 +547,7 @@ MeetShift/
 **Kamil Kalicki**
 
 - GitHub: [Kali2114](https://github.com/Kali2114)
-- LinkedIn: coming soon
+- LinkedIn: [Kamil Kalicki](https://www.linkedin.com/in/kamil-kalicki-047968245/)
 
 ---
 
