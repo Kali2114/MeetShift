@@ -48,6 +48,8 @@ services:
     build:
       context: .
     command: celery -A config worker -l info
+    healthcheck:
+      test: ["NONE"]
     volumes:
       - ./app:/app
       - media-data:/app/media

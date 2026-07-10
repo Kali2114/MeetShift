@@ -52,6 +52,8 @@ services:
   celery:
     image: kali2114/meetshift:latest
     command: celery -A config worker -l info
+    healthcheck:
+      test: ["NONE"]
     volumes:
       - media-data:/app/media
       - app-logs:/app/logs
