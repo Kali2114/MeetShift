@@ -1,5 +1,22 @@
 # Changelog
 
+## [Unreleased]
+
+### Planned
+- Terraform infrastructure as code
+- Testinfra server configuration checks
+- CodeQL security analysis
+- Trivy vulnerability scanning
+- Dependabot and dependency review
+- Database backup restore verification
+- Production rollback workflow
+- Grafana alerting
+- README screenshots
+- UI polishing and meeting detail improvements
+- WebSocket-based notifications
+
+---
+
 ## v1.0.0 - Production Release
 
 ### Added
@@ -25,9 +42,3 @@
 - Cloudflare DNS configuration
 - Application metrics endpoint
 - Production monitoring stack
-
-### Next
-- Automated CI/CD deployment
-- PostgreSQL backups
-- Centralized logging
-- Sentry integration
