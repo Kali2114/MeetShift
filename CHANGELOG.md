@@ -17,6 +17,10 @@
 
 ---
 
+### Added
+- Imported existing AWS EC2, Security Group and Elastic IP into Terraform.
+- Added initial Terraform configuration for MeetShift infrastructure.
+
 ## v1.0.0 - Production Release
 
 ### Added
