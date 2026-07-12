@@ -3,7 +3,6 @@
 ## [Unreleased]
 
 ### Planned
-- Terraform infrastructure as code
 - Testinfra server configuration checks
 - CodeQL security analysis
 - Trivy vulnerability scanning
