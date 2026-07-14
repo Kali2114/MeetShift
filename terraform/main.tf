@@ -57,6 +57,10 @@ resource "aws_instance" "meetshift" {
   key_name               = var.key_name
   vpc_security_group_ids = [aws_security_group.meetshift.id]
 
+  metadata_options {
+    http_tokens = "required"
+  }
+
   tags = {
     Name    = "meetshift"
     Project = "MeetShift"
