@@ -10,6 +10,8 @@
 - Added Trivy vulnerability scanning for Docker images and Terraform configuration.
 - Added branch protection rules for `main`.
 - Added separate production and development dependency files.
+- Dependabot and dependency review.
+- Database backup restore verification.
 
 ### Changed
 - Updated Pillow and development tooling dependencies.
@@ -24,8 +26,6 @@
 - Documented planned migration to an encrypted EC2 root volume.
 
 ### Planned
-- Dependabot and dependency review.
-- Database backup restore verification.
 - Production rollback workflow.
 - Grafana alerting.
 - README screenshots.
