@@ -1,0 +1,3 @@
+misconfigurations:
+  - id: AWS-0104
+    statement: EC2 requires outbound internet access for AWS SSM, Docker image pulls, package updates, and SMTP email delivery.

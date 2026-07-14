@@ -71,6 +71,7 @@ jobs:
           format: sarif
           output: trivy-terraform-results.sarif
           severity: HIGH,CRITICAL
+          trivyignores: .trivyignore.yaml
           exit-code: 0
 
       - name: Upload Terraform SARIF report
@@ -86,4 +87,5 @@ jobs:
           scan-ref: terraform
           format: table
           severity: HIGH,CRITICAL
+          trivyignores: .trivyignore.yaml
           exit-code: 1
