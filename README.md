@@ -544,7 +544,7 @@ MeetShift/
 **Kamil Kalicki**
 
 - GitHub: [Kali2114](https://github.com/Kali2114)
-- LinkedIn: coming soon
+- LinkedIn: [Kamil Kalicki](https://www.linkedin.com/in/kamil-kalicki-047968245/)
 
 ---
 
