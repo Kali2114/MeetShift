@@ -1,6 +1,6 @@
 services:
   app:
-    image: kali2114/meetshift:latest
+    image: kali2114/meetshift:${IMAGE_TAG:-latest}
     command: >
       sh -c "python manage.py wait_for_db &&
              python manage.py migrate &&
@@ -50,7 +50,7 @@ services:
     image: redis:7-alpine
 
   celery:
-    image: kali2114/meetshift:latest
+    image: kali2114/meetshift:${IMAGE_TAG:-latest}
     command: celery -A config worker -l info
     healthcheck:
       test: ["NONE"]
