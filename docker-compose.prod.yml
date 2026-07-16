@@ -109,6 +109,13 @@ services:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${EMAIL_HOST}:${EMAIL_PORT}
+      - GF_SMTP_USER=${EMAIL_HOST_USER}
+      - GF_SMTP_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${EMAIL_HOST_USER}
+      - GF_SMTP_FROM_NAME=MeetShift Grafana
     depends_on:
       - prometheus
 
