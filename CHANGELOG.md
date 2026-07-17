@@ -13,6 +13,7 @@
 - Dependabot and dependency review.
 - Database backup restore verification.
 - Production rollback workflow.
+- Grafana alerting.
 
 ### Changed
 - Updated Pillow and development tooling dependencies.
@@ -27,7 +28,6 @@
 - Documented planned migration to an encrypted EC2 root volume.
 
 ### Planned
-- Grafana alerting.
 - Authentication event logging and monitoring.
 - README screenshots.
 - UI polishing and meeting detail improvements.

@@ -224,3 +224,5 @@ terraform/*.tfstate
 terraform/*.tfstate.*
 terraform/terraform.tfvars
 terraform/crash.log
+
+*.deb
