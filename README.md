@@ -1,133 +1,118 @@
 # 🚀 MeetShift
 
 ![Checks](https://github.com/Kali2114/MeetShift/actions/workflows/checks.yml/badge.svg)
+![CodeQL](https://github.com/Kali2114/MeetShift/actions/workflows/codeql.yml/badge.svg)
+![Trivy](https://github.com/Kali2114/MeetShift/actions/workflows/trivy.yml/badge.svg)
 [![codecov](https://codecov.io/github/Kali2114/MeetShift/graph/badge.svg?token=UZ4HIOYQY7)](https://codecov.io/github/Kali2114/MeetShift)
+
 ![Python](https://img.shields.io/badge/Python-3.12-blue?logo=python)
 ![Django](https://img.shields.io/badge/Django-5.x-092E20?logo=django)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%20%7C%2017-336791?logo=postgresql)
 ![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker)
 ![AWS](https://img.shields.io/badge/AWS-EC2-FF9900?logo=amazonaws)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions)
+![Terraform](https://img.shields.io/badge/Terraform-IaC-844FBA?logo=terraform)
 ![Prometheus](https://img.shields.io/badge/Prometheus-Monitoring-E6522C?logo=prometheus)
-![Grafana](https://img.shields.io/badge/Grafana-Dashboards-F46800?logo=grafana)
+![Grafana](https://img.shields.io/badge/Grafana-Alerting-F46800?logo=grafana)
 ![Loki](https://img.shields.io/badge/Loki-Logging-F46800?logo=grafana)
-![License](https://img.shields.io/github/license/Kali2114/MeetShift)
 
-> **Production meeting scheduling application built with Django, Docker, AWS and a complete CI/CD and observability stack.**
+> **Production meeting scheduling application built with Django, Docker, AWS, Terraform and a complete CI/CD, security and observability stack.**
 
-MeetShift is a meeting scheduling application that allows users to create meetings, invite participants, manage invitation responses and receive notifications.
+MeetShift allows users to create meetings, invite participants, manage invitation responses and receive real-time notifications.
 
-The project was created to simulate a real-world backend system. Its scope includes not only application features, but also automated testing, containerization, production deployment, CI/CD, monitoring, centralized logging and secure infrastructure management.
+The project demonstrates the complete lifecycle of a production backend application: development, automated testing, containerization, infrastructure as code, deployment, monitoring, security scanning, backup verification and rollback.
 
 🌍 **Live application:** [https://meetshift.org](https://meetshift.org)
 
 ---
 
-## 📸 Screenshots
+## ✨ Features
 
-> Coming soon
-
-Planned screenshots:
-
-- meeting list,
-- meeting details,
-- calendar,
-- user profile,
-- notifications,
-- Grafana dashboards,
-- Loki logs,
-- GitHub Actions deployment pipeline.
+- User registration, login and authorization
+- User profiles with avatar uploads
+- Account and password management
+- Meeting creation, editing and deletion
+- Calendar interface
+- Participant invitations
+- Accepting and declining invitations
+- E-mail notifications
+- Background tasks with Celery
+- Real-time WebSocket notifications
+- Live notification badge updates
+- Persistent media and static files
+- HTTPS through Cloudflare
+- Automated AWS deployment
+- Monitoring, alerting and centralized logging
+- Database backup and restore verification
+- Manual production rollback
 
 ---
 
-## ✨ Features
+## ⚡ Real-time Notifications
 
-- 🔐 User registration, login and authorization
-- 👤 User profiles with avatar uploads
-- ⚙️ Account and password management
-- 📅 Meeting creation, editing and deletion
-- 🗓 Calendar interface
-- 👥 Participant invitations
-- ✅ Accepting and declining invitations
-- 🔔 In-app notification system
-- 📧 Email notifications
-- ⚡ Background task processing with Celery
-- 📂 Persistent media and static files
-- 🔒 HTTPS and Cloudflare proxy
-- 📊 Application metrics and dashboards
-- 🧾 Centralized container logging
-- 🚀 Automated deployment to AWS
+MeetShift uses WebSockets to deliver notifications without requiring a page refresh.
+
+```text
+Application event
+      │
+      ▼
+Django creates notification
+      │
+      ▼
+Django Channels
+      │
+      ▼
+Redis channel layer
+      │
+      ▼
+WebSocket connection
+      │
+      ▼
+Browser notification
+```
+
+Real-time updates include:
+
+- new notification messages,
+- notification toast messages,
+- live navbar badge updates,
+- immediate delivery without refreshing the page.
+
+Redis is shared by Celery and the Django Channels layer.
 
 ---
 
 ## 🏗 Architecture
 
 ```text
-                             Internet
-                                 │
-                                 ▼
-                       Cloudflare DNS / HTTPS
-                                 │
-                                 ▼
-                         AWS EC2 — Ubuntu
-                                 │
-                                 ▼
-                              Nginx
-                                 │
-                                 ▼
-                             Gunicorn
-                                 │
-                                 ▼
-                              Django
-                    ┌────────────┴────────────┐
-                    ▼                         ▼
-               PostgreSQL                  Redis
-                                               │
-                                               ▼
-                                            Celery
+                         Internet
+                             │
+                             ▼
+                   Cloudflare DNS / HTTPS
+                             │
+                             ▼
+                     AWS EC2 — Ubuntu
+                             │
+                             ▼
+                          Nginx
+                             │
+                   ┌─────────┴─────────┐
+                   ▼                   ▼
+              Gunicorn              WebSocket
+                   │                   │
+                   ▼                   ▼
+                Django          Django Channels
+                   │                   │
+          ┌────────┴────────┐          │
+          ▼                 ▼          ▼
+     PostgreSQL           Redis ◄──────┘
+                             │
+                             ▼
+                          Celery
 
 
-        Prometheus ───────────────► Grafana dashboards
+Django metrics ─► Prometheus ─► Grafana dashboards and alerts
 
-        Docker containers ─► Promtail ─► Loki ─► Grafana logs
-```
-
-### Deployment flow
-
-```text
-git push to main
-        │
-        ▼
-GitHub Actions
-        │
-        ├── Black
-        ├── Ruff
-        ├── Django checks
-        ├── Migration validation
-        ├── Tests and coverage
-        └── PostgreSQL 16 / 17 matrix
-        │
-        ▼
-Docker image build
-        │
-        ▼
-Docker Hub
-        │
-        ▼
-GitHub OpenID Connect
-        │
-        ▼
-AWS Systems Manager
-        │
-        ▼
-EC2 deployment
-        │
-        ├── Pull new application image
-        ├── Recreate Django and Celery containers
-        ├── Run migrations
-        ├── Collect static files
-        ├── Restart Nginx
-        └── Production health check
+Docker logs ─► Promtail ─► Loki ─► Grafana
 ```
 
 ---
@@ -138,6 +123,7 @@ EC2 deployment
 
 - Python 3.12
 - Django 5
+- Django Channels
 - Gunicorn
 - Celery
 
@@ -150,6 +136,7 @@ EC2 deployment
 
 - Docker
 - Docker Compose
+- Terraform
 - AWS EC2
 - AWS Systems Manager
 - AWS IAM
@@ -161,163 +148,186 @@ EC2 deployment
 
 - Prometheus
 - Grafana
+- Grafana Alerting
 - Loki
 - Promtail
-- Django logging
 
-### Testing and quality
+### Testing and security
 
 - Django Test Framework
+- Testinfra
 - Coverage.py
 - Codecov
-- Ruff
 - Black
+- Ruff
 - pre-commit
-
-### CI/CD
-
-- GitHub Actions
-- Docker Buildx
-- GitHub Actions cache
-- Docker Hub
-- AWS Systems Manager Run Command
+- CodeQL
+- Trivy
+- Dependabot
+- Dependency Review
 
 ---
 
-## 🚀 Production Infrastructure
+## 🚀 CI/CD and Deployment
 
-MeetShift runs on an AWS EC2 instance using Docker Compose.
-
-The production environment contains:
-
-- Django application served by Gunicorn
-- Nginx reverse proxy
-- PostgreSQL database
-- Redis message broker
-- Celery worker
-- Prometheus
-- Grafana
-- Loki
-- Promtail
-- persistent Docker volumes
-- Cloudflare DNS and HTTPS
-- automated deployment through GitHub Actions
-
-The application and Celery worker use the same versioned Docker image published to Docker Hub.
-
-The EC2 server does not build the application image locally. It pulls an image that has already passed the complete CI pipeline.
-
----
-
-## 🔐 Secure AWS Deployment
-
-Production deployment does not require an SSH connection from GitHub Actions.
-
-GitHub Actions authenticates with AWS through **OpenID Connect**, which provides temporary AWS credentials without storing permanent AWS access keys.
-
-Deployment commands are sent to the EC2 instance using **AWS Systems Manager Run Command**.
+GitHub Actions runs for pull requests targeting `main` and pushes to `main`.
 
 ```text
-GitHub Actions
-      │
-      ▼
-GitHub OIDC token
-      │
-      ▼
-AWS IAM deployment role
-      │
-      ▼
+Pull request
+     │
+     ▼
+Black / Ruff / Django checks
+     │
+     ▼
+PostgreSQL 16 and 17 tests
+     │
+     ▼
+Coverage / CodeQL / Trivy
+     │
+     ▼
+Dependency Review
+     │
+     ▼
+Merge to main
+     │
+     ▼
+Docker image build
+     │
+     ▼
+Docker Hub
+     │
+     ▼
+AWS OIDC
+     │
+     ▼
 AWS Systems Manager
-      │
-      ▼
-MeetShift EC2 instance
+     │
+     ▼
+EC2 deployment
+     │
+     ▼
+Production health check
 ```
 
-Security benefits:
+Production images are tagged as:
 
-- no private EC2 key stored in GitHub,
-- no permanent AWS access keys,
-- SSH does not need to be open to GitHub runners,
-- the IAM role is restricted to this repository,
-- the role can only be assumed from the `main` branch,
-- deployment permissions are limited to the selected EC2 instance.
+```text
+kali2114/meetshift:latest
+kali2114/meetshift:<commit-sha>
+```
+
+The EC2 instance pulls images that have already passed the CI and security pipelines.
 
 ---
 
-## 🔄 Continuous Integration and Deployment
+## ↩️ Production Rollback
 
-The GitHub Actions workflow runs automatically on pushes and pull requests.
+A manually triggered GitHub Actions workflow can roll production back to a previous Docker image.
 
-### Continuous Integration
+The workflow:
 
-The pipeline performs:
-
-- Docker container build
-- Black formatting validation
-- Ruff linting
-- Django system checks
-- missing migration detection
-- automated tests
-- coverage report generation
-- Codecov upload
-- PostgreSQL compatibility tests
-
-Tests are executed against:
-
-```text
-PostgreSQL 16.2
-PostgreSQL 17
-```
-
-### Continuous Deployment
-
-Deployment runs only after all CI jobs complete successfully and only for pushes to the `main` branch.
-
-```text
-test-lint
-    │
-    ▼
-build-image
-    │
-    ▼
-deploy
-```
-
-The deployment job:
-
-1. authenticates with AWS through OIDC,
-2. sends a command through AWS Systems Manager,
-3. pulls the latest application image,
-4. recreates the Django and Celery containers,
-5. runs migrations and `collectstatic`,
+1. accepts a Docker image tag or full commit SHA,
+2. authenticates with AWS through OIDC,
+3. sends commands through AWS Systems Manager,
+4. pulls the selected image,
+5. recreates Django and Celery containers,
 6. restarts Nginx,
 7. performs a production health check.
 
-A failed test or build prevents production deployment.
+Rollback changes the running application image. It does not automatically restore the database.
 
 ---
 
-## 📊 Monitoring
+## 🏗 Infrastructure as Code
 
-Application metrics are collected by Prometheus and visualized in Grafana.
+Existing AWS resources were imported into Terraform.
 
-Available metrics include:
+Terraform configuration covers:
 
-- HTTP request count
-- response status codes
-- request duration
-- request throughput
-- server error rate
-- application health
-- endpoint performance
+- EC2 instance
+- Security Group
+- Elastic IP
+- provider configuration
+- variables and outputs
 
-The monitoring stack helps detect application failures, increased latency and abnormal traffic patterns.
+```text
+terraform/
+├── main.tf
+├── providers.tf
+├── variables.tf
+├── outputs.tf
+└── terraform.tfvars.example
+```
+
+Before applying infrastructure changes:
+
+```bash
+cd terraform
+terraform fmt -check
+terraform validate
+terraform plan
+```
+
+Infrastructure changes are applied only after reviewing the plan.
+
+---
+
+## 🔐 Security
+
+MeetShift includes:
+
+- GitHub OIDC authentication for AWS
+- no permanent AWS access keys in GitHub
+- deployment through AWS Systems Manager
+- CodeQL analysis for Python and GitHub Actions
+- Trivy Docker image scanning
+- Trivy Terraform scanning
+- Dependency Review
+- Dependabot updates
+- branch protection for `main`
+- required IMDSv2 on EC2
+- authentication event logging
+
+Passwords, tokens and complete login credentials are never written to application logs.
+
+---
+
+## 📊 Monitoring and Alerting
+
+Prometheus collects Django application metrics and Grafana displays dashboards.
+
+Configured alerts include:
+
+### Application unavailable
+
+```text
+up{job="django", instance="app:8000"} < 1
+for 2 minutes
+```
+
+### HTTP 5xx errors
+
+```promql
+sum(
+  increase(
+    django_http_responses_total_by_status_total{
+      job="django",
+      instance="app:8000",
+      status=~"5.."
+    }[5m]
+  )
+) or vector(0)
+```
+
+The HTTP error alert fires when more than two server errors occur within five minutes.
+
+Alert rules and the e-mail contact point are provisioned from YAML files stored in the repository.
 
 ---
 
 ## 🧾 Centralized Logging
 
-MeetShift uses Loki and Promtail for centralized container logs.
+Promtail collects Docker container logs and sends them to Loki.
 
 ```text
 Docker containers
@@ -334,7 +344,7 @@ Docker containers
 
 Logs can be filtered by service, including:
 
-- Django application
+- Django
 - Gunicorn
 - Nginx
 - Celery
@@ -343,78 +353,54 @@ Logs can be filtered by service, including:
 - Prometheus
 - Grafana
 
-This makes it possible to inspect production errors without connecting directly to every container.
+Authentication events include:
+
+- successful login,
+- failed login attempt,
+- logout.
 
 ---
 
-## 🐳 Docker
+## 💾 Database Backup and Restore
 
-### Development
-
-```bash
-docker compose up --build
-```
-
-### Production
-
-```bash
-docker compose -f docker-compose.prod.yml up -d
-```
-
-### Production status
-
-```bash
-docker compose -f docker-compose.prod.yml ps
-```
-
-### Application logs
-
-```bash
-docker compose -f docker-compose.prod.yml logs --tail=100 app
-```
-
-### Celery logs
-
-```bash
-docker compose -f docker-compose.prod.yml logs --tail=100 celery
-```
-
----
-
-## ⚙️ Local Installation
-
-### 1. Clone the repository
-
-```bash
-git clone https://github.com/Kali2114/MeetShift.git
-cd MeetShift
-```
-
-### 2. Create the environment file
-
-```bash
-cp .env.example .env
-```
-
-Fill in the required environment variables.
-
-### 3. Start the application
-
-```bash
-docker compose up --build
-```
-
-### 4. Open the application
+MeetShift includes scripts for creating, restoring and verifying PostgreSQL backups.
 
 ```text
-http://localhost:8000
+scripts/
+├── backup_db.sh
+├── restore_db.sh
+└── verify_backup.sh
 ```
+
+Create a backup:
+
+```bash
+./scripts/backup_db.sh
+```
+
+Restore a backup:
+
+```bash
+./scripts/restore_db.sh \
+  backups/meetshift_<timestamp>.sql.gz \
+  target_database
+```
+
+Verify the latest backup:
+
+```bash
+./scripts/verify_backup.sh
+```
+
+The verification script restores the backup into a temporary database, checks required tables and data, and removes the temporary database afterward.
+
+Off-site S3 storage is intentionally not enabled to minimize infrastructure costs.
 
 ---
 
 ## 🧪 Testing
 
-Tests should be executed inside the application container.
+Run all application tests:
 
 ```bash
 docker compose run --rm app sh -c \
@@ -425,37 +411,55 @@ Run tests with coverage:
 
 ```bash
 docker compose run --rm app sh -c \
-  "coverage run manage.py test && coverage report"
+  "python manage.py wait_for_db &&
+   coverage run manage.py test &&
+   coverage report"
 ```
 
-Generate an HTML coverage report:
+Run infrastructure tests:
 
 ```bash
-docker compose run --rm app sh -c \
-  "coverage run manage.py test && coverage html"
+pytest --connection=local tests_infra/local/
 ```
 
-The project maintains test coverage close to **100%**.
+The project contains more than 130 automated tests and maintains coverage close to 100%.
+
+---
+
+## 🐳 Local Development
+
+Clone the repository:
+
+```bash
+git clone https://github.com/Kali2114/MeetShift.git
+cd MeetShift
+```
+
+Create the environment file:
+
+```bash
+cp .env.example .env
+```
+
+Start the application:
+
+```bash
+docker compose up --build
+```
+
+Open:
+
+```text
+http://localhost:8000
+```
 
 ---
 
 ## ✅ Code Quality
 
-Run Black:
-
 ```bash
 docker compose run --rm app sh -c "black --check ."
-```
-
-Run Ruff:
-
-```bash
-docker compose run --rm app sh -c "ruff check ."
-```
-
-Run pre-commit hooks:
-
-```bash
+docker compose run --rm app sh -c "ruff check . --no-cache"
 pre-commit run --all-files
 ```
 
@@ -465,31 +469,30 @@ pre-commit run --all-files
 
 ```text
 MeetShift/
-│
-├── config/                         # Django configuration
-├── core/                           # Core models, utilities and tasks
-├── meeting/                        # Meeting management
-├── user/                           # Authentication, profiles and notifications
+├── app/
+│   ├── config/
+│   ├── core/
+│   ├── meeting/
+│   ├── user/
+│   └── manage.py
 ├── monitoring/
 │   ├── grafana/
-│   │   ├── dashboards/
-│   │   └── provisioning/
 │   ├── loki/
 │   ├── promtail/
 │   └── prometheus.yml
 ├── nginx/
-│   ├── nginx.conf
-│   └── certs/
 ├── scripts/
-├── backups/
+├── terraform/
+├── tests_infra/
 ├── .github/
+│   ├── dependabot.yml
 │   └── workflows/
-│       └── checks.yml
 ├── docker-compose.yml
 ├── docker-compose.prod.yml
 ├── Dockerfile
-├── manage.py
-├── pyproject.toml
+├── requirements.txt
+├── requirements-dev.txt
+├── CHANGELOG.md
 └── README.md
 ```
 
@@ -497,45 +500,25 @@ MeetShift/
 
 ## 🛣 Roadmap
 
-### ✅ Completed
+### ✅ v1.1.0
 
-- User authentication and authorization
-- User profiles and avatar uploads
-- Account and password management
-- Meeting management
-- Participant invitations
-- Invitation responses
-- Notification system
-- Email integration
-- Calendar interface
-- Celery background tasks
-- Docker and Docker Compose
-- Gunicorn and Nginx
-- AWS EC2 deployment
-- Cloudflare and HTTPS
-- Prometheus monitoring
-- Grafana dashboards
-- Loki centralized logging
-- Promtail log collection
-- PostgreSQL 16 and 17 CI matrix
-- Coverage and Codecov
-- Docker image publishing
-- Automated CI/CD deployment
-- GitHub OpenID Connect authentication
-- AWS Systems Manager deployment
-- Production health check
+- Terraform infrastructure configuration
+- Testinfra infrastructure tests
+- CodeQL security analysis
+- Trivy vulnerability scanning
+- Dependabot and Dependency Review
+- Branch protection
+- Database backup restore verification
+- Production rollback workflow
+- Grafana e-mail alerting
+- Authentication event logging
+- Real-time WebSocket notifications
 
-### 🚧 Planned
+### 🔮 v2.0
 
-- Grafana alerting
-- Application availability alerts
-- HTTP 500 error alerts
-- Resource usage alerts
-- Improved Loki dashboards
-- User interface polishing
-- Additional performance optimization
-- Production deployment rollback
-- Release `v1.0.0`
+- Chat
+- Meeting rooms
+- User interface redesign and polishing
 
 ---
 

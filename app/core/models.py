@@ -27,12 +27,19 @@ def avatar_file_path(instance, filename):
 
 
 class UserManager(BaseUserManager):
-    """Manage for users."""
+    """Manager for users."""
 
     def create_user(self, email, name, password=None, **kwargs):
         """Create, save and return a new user."""
         check_email_and_name(email, name)
-        user = self.model(email=self.normalize_email(email), name=name, **kwargs)
+
+        normalized_email = self.normalize_email(email).strip().lower()
+
+        user = self.model(
+            email=normalized_email,
+            name=name,
+            **kwargs,
+        )
         user.set_password(password)
         user.save(using=self._db)
 
@@ -41,11 +48,15 @@ class UserManager(BaseUserManager):
     def create_superuser(self, email, name, password=None, **kwargs):
         """Create, save and return a new superuser."""
         check_email_and_name(email, name)
+
+        normalized_email = self.normalize_email(email).strip().lower()
+
         user = self.model(
-            email=self.normalize_email(email),
+            email=normalized_email,
             name=name,
             is_superuser=True,
             is_staff=True,
+            **kwargs,
         )
         user.set_password(password)
         user.save(using=self._db)

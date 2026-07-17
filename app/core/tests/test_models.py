@@ -30,8 +30,9 @@ class ModelTests(TestCase):
         """Test the email is normalized for new users."""
         sample_emails = [
             ["test1@EXAMPLE.com", "test1@example.com"],
-            ["Test2@ExAmple.com", "Test2@example.com"],
-            ["Test3@example.COM", "Test3@example.com"],
+            ["Test2@ExAmple.com", "test2@example.com"],
+            ["Test3@example.COM", "test3@example.com"],
+            ["  USER@EXAMPLE.COM  ", "user@example.com"],
         ]
         for idx, (email, expected) in enumerate(sample_emails):
             user = utils.create_user(
@@ -40,6 +41,19 @@ class ModelTests(TestCase):
                 name=f"User{idx}",
             )
             self.assertEqual(user.email, expected)
+
+    def test_email_is_unique_case_insensitive(self):
+        """Test users cannot use emails differing only by letter case."""
+        utils.create_user(
+            email="user@example.com",
+            name="User One",
+        )
+
+        with self.assertRaises(IntegrityError):
+            utils.create_user(
+                email="USER@EXAMPLE.COM",
+                name="User Two",
+            )
 
     def test_new_user_without_email_raise_error(self):
         """Test raises ValueError when creating user without email."""
