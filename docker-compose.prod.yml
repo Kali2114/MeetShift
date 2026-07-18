@@ -1,6 +1,7 @@
 services:
   app:
     image: kali2114/meetshift:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     command: >
       sh -c "python manage.py wait_for_db &&
              python manage.py migrate &&
@@ -34,6 +35,7 @@ services:
 
   db:
     image: postgres:16.2-alpine3.19
+    restart: unless-stopped
     volumes:
       - prod-db-data:/var/lib/postgresql/data
     environment:
@@ -48,9 +50,11 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
 
   celery:
     image: kali2114/meetshift:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     command: celery -A config worker -l info
     healthcheck:
       test: ["NONE"]
@@ -81,6 +85,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -94,6 +99,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.55.1
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -103,6 +109,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.3.0
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
