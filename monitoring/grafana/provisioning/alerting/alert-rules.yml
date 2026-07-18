@@ -1,0 +1,135 @@
+apiVersion: 1
+
+groups:
+  - orgId: 1
+    name: availability
+    folder: MeetShift
+    interval: 1m
+
+    rules:
+      - uid: meetshift-application-unavailable
+        title: MeetShift application unavailable
+        condition: C
+
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: up{job="django", instance="app:8000"}
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 1
+                    type: lt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+        noDataState: NoData
+        execErrState: Error
+        for: 2m
+
+        annotations:
+          description: Prometheus has been unable to scrape the Django application for at least 2 minutes.
+          summary: MeetShift application is unavailable
+
+        isPaused: false
+
+        notification_settings:
+          receiver: MeetShift Email
+
+      - uid: meetshift-http-5xx-errors
+        title: MeetShift HTTP 5xx errors
+        condition: C
+
+        data:
+          - refId: A
+            relativeTimeRange:
+              from: 600
+              to: 0
+            datasourceUid: PBFA97CFB590B2093
+            model:
+              editorMode: code
+              expr: |
+                sum(
+                  increase(
+                    django_http_responses_total_by_status_total{
+                      job="django",
+                      instance="app:8000",
+                      status=~"5.."
+                    }[5m]
+                  )
+                ) or vector(0)
+              instant: true
+              intervalMs: 1000
+              legendFormat: __auto
+              maxDataPoints: 43200
+              range: false
+              refId: A
+
+          - refId: C
+            datasourceUid: __expr__
+            model:
+              conditions:
+                - evaluator:
+                    params:
+                      - 2
+                    type: gt
+                  operator:
+                    type: and
+                  query:
+                    params:
+                      - C
+                  reducer:
+                    params: []
+                    type: last
+                  type: query
+              datasource:
+                type: __expr__
+                uid: __expr__
+              expression: A
+              intervalMs: 1000
+              maxDataPoints: 43200
+              refId: C
+              type: threshold
+
+        noDataState: NoData
+        execErrState: Error
+        for: 1m
+
+        annotations:
+          description: The Django application returned more than 2 HTTP 5xx responses within the last 5 minutes.
+          summary: MeetShift is returning HTTP 5xx errors
+
+        isPaused: false
+
+        notification_settings:
+          receiver: MeetShift Email

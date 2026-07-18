@@ -5,7 +5,75 @@
 
 <form method="post" class="page-form">
     {% csrf_token %}
-    {{ form.as_p }}
-    <button type="submit">Register</button>
+
+    {% if form.non_field_errors %}
+        {{ form.non_field_errors }}
+    {% endif %}
+
+    <p>
+        {{ form.name.label_tag }}
+        {{ form.name }}
+
+        {% if form.name.errors %}
+            {{ form.name.errors }}
+        {% endif %}
+    </p>
+
+    <p>
+        {{ form.email.label_tag }}
+        {{ form.email }}
+
+        {% if form.email.errors %}
+            {{ form.email.errors }}
+        {% endif %}
+    </p>
+
+    <p>
+        {{ form.password.label_tag }}
+
+        <span class="password-field">
+            {{ form.password }}
+
+            <button
+                type="button"
+                class="password-toggle"
+                data-password-target="{{ form.password.id_for_label }}"
+                aria-label="Show password"
+                title="Show password"
+            >
+                👁
+            </button>
+        </span>
+
+        {% if form.password.errors %}
+            {{ form.password.errors }}
+        {% endif %}
+    </p>
+
+    <p>
+        {{ form.password_confirm.label_tag }}
+
+        <span class="password-field">
+            {{ form.password_confirm }}
+
+            <button
+                type="button"
+                class="password-toggle"
+                data-password-target="{{ form.password_confirm.id_for_label }}"
+                aria-label="Show password"
+                title="Show password"
+            >
+                👁
+            </button>
+        </span>
+
+        {% if form.password_confirm.errors %}
+            {{ form.password_confirm.errors }}
+        {% endif %}
+    </p>
+
+    <div class="form-actions">
+        <button type="submit" class="btn">Register</button>
+    </div>
 </form>
 {% endblock %}

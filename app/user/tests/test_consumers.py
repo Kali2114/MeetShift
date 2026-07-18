@@ -1,0 +1,93 @@
+from channels.layers import get_channel_layer
+from channels.routing import URLRouter
+from channels.testing import WebsocketCommunicator
+from core.tests import utils
+from django.test import TransactionTestCase, override_settings
+from user.routing import websocket_urlpatterns
+
+TEST_CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels.layers.InMemoryChannelLayer",
+    },
+}
+
+
+@override_settings(CHANNEL_LAYERS=TEST_CHANNEL_LAYERS)
+class NotificationConsumerTests(TransactionTestCase):
+    """Tests for notification WebSocket consumer."""
+
+    def setUp(self):
+        """Create user for tests."""
+        self.user = utils.create_user()
+
+    async def test_authenticated_user_can_connect(self):
+        """Test authenticated user can connect to notification WebSocket."""
+        application = URLRouter(websocket_urlpatterns)
+
+        communicator = WebsocketCommunicator(
+            application,
+            "/ws/notifications/",
+        )
+        communicator.scope["user"] = self.user
+
+        connected, _ = await communicator.connect()
+
+        self.assertTrue(connected)
+
+        await communicator.disconnect()
+
+    async def test_anonymous_user_cannot_connect(self):
+        """Test anonymous user cannot connect to notification WebSocket."""
+        from django.contrib.auth.models import AnonymousUser
+
+        application = URLRouter(websocket_urlpatterns)
+
+        communicator = WebsocketCommunicator(
+            application,
+            "/ws/notifications/",
+        )
+        communicator.scope["user"] = AnonymousUser()
+
+        connected, _ = await communicator.connect()
+
+        self.assertFalse(connected)
+
+    async def test_consumer_receives_event_from_user_group(self):
+        """Test notification event is received from user's channel group."""
+        application = URLRouter(websocket_urlpatterns)
+
+        communicator = WebsocketCommunicator(
+            application,
+            "/ws/notifications/",
+        )
+        communicator.scope["user"] = self.user
+
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        channel_layer = get_channel_layer()
+
+        await channel_layer.group_send(
+            f"notifications_user_{self.user.id}",
+            {
+                "type": "notification.message",
+                "id": 12,
+                "message": "You have been invited.",
+                "meeting_id": 4,
+                "unread_count": 2,
+            },
+        )
+
+        response = await communicator.receive_json_from()
+
+        self.assertEqual(
+            response,
+            {
+                "id": 12,
+                "message": "You have been invited.",
+                "meeting_id": 4,
+                "unread_count": 2,
+            },
+        )
+
+        await communicator.disconnect()

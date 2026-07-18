@@ -36,6 +36,7 @@ urlpatterns = [
     path("", include("meeting.urls")),
     path("user/", include("user.urls")),
     path("", include("django_prometheus.urls")),
+    path("", include("core.urls")),
 ]
 
 

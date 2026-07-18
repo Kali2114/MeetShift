@@ -1,6 +1,7 @@
 services:
   app:
-    image: kali2114/meetshift:latest
+    image: kali2114/meetshift:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     command: >
       sh -c "python manage.py wait_for_db &&
              python manage.py migrate &&
@@ -34,6 +35,7 @@ services:
 
   db:
     image: postgres:16.2-alpine3.19
+    restart: unless-stopped
     volumes:
       - prod-db-data:/var/lib/postgresql/data
     environment:
@@ -48,10 +50,14 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
 
   celery:
-    image: kali2114/meetshift:latest
+    image: kali2114/meetshift:${IMAGE_TAG:-latest}
+    restart: unless-stopped
     command: celery -A config worker -l info
+    healthcheck:
+      test: ["NONE"]
     volumes:
       - media-data:/app/media
       - app-logs:/app/logs
@@ -79,6 +85,7 @@ services:
 
   nginx:
     image: nginx:1.27-alpine
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
@@ -92,6 +99,7 @@ services:
 
   prometheus:
     image: prom/prometheus:v2.55.1
+    restart: unless-stopped
     ports:
       - "9090:9090"
     volumes:
@@ -101,12 +109,20 @@ services:
 
   grafana:
     image: grafana/grafana:11.3.0
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
       - grafana-data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
       - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SMTP_ENABLED=true
+      - GF_SMTP_HOST=${EMAIL_HOST}:${EMAIL_PORT}
+      - GF_SMTP_USER=${EMAIL_HOST_USER}
+      - GF_SMTP_PASSWORD=${EMAIL_HOST_PASSWORD}
+      - GF_SMTP_FROM_ADDRESS=${EMAIL_HOST_USER}
+      - GF_SMTP_FROM_NAME=MeetShift Grafana
     depends_on:
       - prometheus
 

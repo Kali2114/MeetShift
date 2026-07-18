@@ -216,3 +216,13 @@ __marimo__/
 
 # Backups
 backups/
+
+
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate
+terraform/*.tfstate.*
+terraform/terraform.tfvars
+terraform/crash.log
+
+*.deb

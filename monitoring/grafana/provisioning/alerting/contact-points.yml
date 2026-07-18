@@ -1,0 +1,12 @@
+apiVersion: 1
+
+contactPoints:
+  - orgId: 1
+    name: MeetShift Email
+    receivers:
+      - uid: meetshift-email
+        type: email
+        settings:
+          addresses: kamil.kalicki.dev@gmail.com
+          singleEmail: false
+        disableResolveMessage: false

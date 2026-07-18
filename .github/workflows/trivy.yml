@@ -1,0 +1,58 @@
+name: Trivy
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+  schedule:
+    - cron: "40 19 * * 2"
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  scan-image:
+    name: Scan Docker image
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t meetshift:${{ github.sha }} .
+
+      - name: Generate Docker image SARIF report
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: meetshift:${{ github.sha }}
+          format: sarif
+          output: trivy-image-results.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 0
+          skip-files: /py/lib/python3.12/site-packages/autobahn/wamp/cryptosign.py,/py/lib/python3.12/site-packages/autobahn/wamp/__pycache__/cryptosign.cpython-312.pyc
+
+      - name: Upload Docker image SARIF report
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-image-results.sarif
+          category: trivy-image
+
+      - name: Enforce Docker image security
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: image
+          image-ref: meetshift:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: 1
+          skip-files: /py/lib/python3.12/site-packages/autobahn/wamp/cryptosign.py,/py/lib/python3.12/site-packages/autobahn/wamp/__pycache__/cryptosign.cpython-312.pyc

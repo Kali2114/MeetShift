@@ -2,6 +2,8 @@ services:
   app:
     build:
       context: .
+      args:
+        DEV: true
     ports:
       - "8000:8000"
     volumes:
@@ -47,7 +49,11 @@ services:
   celery:
     build:
       context: .
+      args:
+        DEV: true
     command: celery -A config worker -l info
+    healthcheck:
+      test: ["NONE"]
     volumes:
       - ./app:/app
       - media-data:/app/media

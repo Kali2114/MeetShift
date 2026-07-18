@@ -1,0 +1,91 @@
+name: Rollback Production
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Docker image tag or full commit SHA"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  rollback:
+    name: Rollback production
+    runs-on: ubuntu-latest
+
+    concurrency:
+      group: meetshift-production-deploy
+      cancel-in-progress: false
+
+    steps:
+      - name: Validate image tag
+        env:
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          if [[ ! "$IMAGE_TAG" =~ ^[a-zA-Z0-9._-]+$ ]]; then
+            echo "Invalid Docker image tag: $IMAGE_TAG"
+            exit 1
+          fi
+
+          echo "Rolling back to image tag: $IMAGE_TAG"
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Roll back through AWS Systems Manager
+        env:
+          INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+          IMAGE_TAG: ${{ inputs.image_tag }}
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Rollback MeetShift to image $IMAGE_TAG" \
+            --parameters "commands=[
+              \"set -e\",
+              \"cd /home/ubuntu/MeetShift\",
+              \"IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml pull app celery\",
+              \"IMAGE_TAG=$IMAGE_TAG docker compose -f docker-compose.prod.yml up -d app celery\",
+              \"docker compose -f docker-compose.prod.yml restart nginx\",
+              \"docker compose -f docker-compose.prod.yml ps\",
+              \"docker image prune -f\"
+            ]" \
+            --query "Command.CommandId" \
+            --output text)
+
+          echo "SSM command ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID"
+
+          aws ssm get-command-invocation \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$INSTANCE_ID" \
+            --query '{
+              Status: Status,
+              Output: StandardOutputContent,
+              Error: StandardErrorContent
+            }'
+
+      - name: Production health check
+        run: |
+          curl \
+            --fail \
+            --location \
+            --silent \
+            --show-error \
+            --retry 10 \
+            --retry-delay 5 \
+            --retry-all-errors \
+            --max-time 20 \
+            https://meetshift.org/health/ > /dev/null
+
+          echo "MeetShift rollback completed successfully."
