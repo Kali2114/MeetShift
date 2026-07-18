@@ -152,6 +152,7 @@ jobs:
             --parameters 'commands=[
               "set -e",
               "cd /home/ubuntu/MeetShift",
+              "git config --global --add safe.directory /home/ubuntu/MeetShift",
               "git fetch origin",
               "git reset --hard origin/main",
               "docker compose -f docker-compose.prod.yml pull app celery",
