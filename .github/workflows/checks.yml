@@ -152,6 +152,8 @@ jobs:
             --parameters 'commands=[
               "set -e",
               "cd /home/ubuntu/MeetShift",
+              "git fetch origin",
+              "git reset --hard origin/main",
               "docker compose -f docker-compose.prod.yml pull app celery",
               "docker compose -f docker-compose.prod.yml up -d app celery",
               "docker compose -f docker-compose.prod.yml restart nginx",
