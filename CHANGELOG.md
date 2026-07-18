@@ -15,6 +15,7 @@
 - Production rollback workflow.
 - Grafana alerting.
 - Authentication event logging and monitoring.
+- WebSocket-based notifications.
 
 ### Changed
 - Updated Pillow and development tooling dependencies.
@@ -28,8 +29,6 @@
 - Documented accepted outbound network access requirements.
 - Documented planned migration to an encrypted EC2 root volume.
 
-### Planned
-- WebSocket-based notifications.
 
 ---
 

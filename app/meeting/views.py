@@ -4,7 +4,7 @@ Views for meeting app.
 
 import logging
 
-from core.models import Meeting, MeetingParticipant, Notification
+from core.models import Meeting, MeetingParticipant
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -22,6 +22,7 @@ from django.views.generic import (
 )
 from meeting.forms import InviteParticipantForm, MeetingForm
 from meeting.utils import user_has_meeting_conflict, user_meetings_queryset
+from user.services import create_notification
 
 logger = logging.getLogger(__name__)
 
@@ -140,11 +141,12 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
                 meeting=self.meeting,
                 user=user,
             )
-            Notification.objects.create(
+            create_notification(
                 meeting=self.meeting,
                 user=user,
                 message=f"You have been invited to meeting: {self.meeting}",
             )
+
             send_invitation_email_task.delay(user.email, self.meeting.title)
 
             logger.info(

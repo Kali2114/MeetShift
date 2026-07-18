@@ -2,9 +2,9 @@
 Tests for user signals.
 """
 
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
-from core.models import User, UserProfile
+from core.models import Notification, User, UserProfile
 from core.tests import utils
 from django.contrib.auth.signals import (
     user_logged_in,
@@ -95,3 +95,83 @@ class SignalTests(TestCase):
         mock_logger.warning.assert_called_once_with(
             "Authentication failed",
         )
+
+    @patch("core.signals.async_to_sync")
+    @patch("core.signals.get_channel_layer")
+    def test_notification_creation_sends_websocket_event(
+        self,
+        mock_get_channel_layer,
+        mock_async_to_sync,
+    ):
+        """Test created notification sends WebSocket event."""
+        channel_layer = MagicMock()
+        group_send = MagicMock()
+
+        mock_get_channel_layer.return_value = channel_layer
+        mock_async_to_sync.return_value = group_send
+
+        user = utils.create_user(
+            name="Participant",
+            email="participant@example.com",
+        )
+        organizer = utils.create_user(
+            name="Organizer",
+            email="organizer@example.com",
+        )
+        meeting = utils.create_meeting(
+            organizer=organizer,
+        )
+
+        with self.captureOnCommitCallbacks(execute=True):
+            notification = Notification.objects.create(
+                user=user,
+                meeting=meeting,
+                message="You have been invited.",
+            )
+
+        mock_get_channel_layer.assert_called_once_with()
+
+        mock_async_to_sync.assert_called_once_with(
+            channel_layer.group_send,
+        )
+
+        group_send.assert_called_once_with(
+            f"notifications_user_{user.id}",
+            {
+                "type": "notification.message",
+                "id": notification.id,
+                "message": notification.message,
+                "meeting_id": meeting.id,
+                "unread_count": 1,
+            },
+        )
+
+    def test_notification_update_does_not_send_websocket_event(self):
+        """Test updated notification does not send WebSocket event."""
+        user = utils.create_user(
+            name="test_name1",
+            email="participant@example.com",
+        )
+        organizer = utils.create_user(
+            name="test_name2",
+            email="organizer@example.com",
+        )
+        meeting = utils.create_meeting(
+            organizer=organizer,
+        )
+
+        notification = Notification.objects.create(
+            user=user,
+            meeting=meeting,
+            message="You have been invited.",
+        )
+
+        with (
+            patch("core.signals.get_channel_layer") as mock_get_channel_layer,
+            patch("core.signals.async_to_sync") as mock_async_to_sync,
+        ):
+            notification.is_read = True
+            notification.save()
+
+        mock_get_channel_layer.assert_not_called()
+        mock_async_to_sync.assert_not_called()

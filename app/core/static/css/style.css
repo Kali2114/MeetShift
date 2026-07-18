@@ -442,6 +442,10 @@ textarea {
     font-weight: 700;
 }
 
+.notification-badge-hidden {
+    display: none !important;
+}
+
 .notification-item {
     display: block;
     padding: 16px 20px;
@@ -586,4 +590,67 @@ textarea {
 
 .password-toggle:hover {
     background: #d1d5db;
+}
+
+.notification-toast-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.notification-toast {
+    width: 320px;
+    padding: 16px 18px;
+    border-radius: 10px;
+    background: #111827;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+    cursor: pointer;
+    animation: notification-toast-in 0.25s ease-out;
+}
+
+.notification-toast-title {
+    margin: 0 0 6px;
+    font-weight: 700;
+}
+
+.notification-toast-message {
+    margin: 0;
+    color: #d1d5db;
+    font-size: 14px;
+}
+
+.notification-toast-removing {
+    opacity: 0;
+    transform: translateX(20px);
+    transition:
+        opacity 0.25s ease,
+        transform 0.25s ease;
+}
+
+@keyframes notification-toast-in {
+    from {
+        opacity: 0;
+        transform: translateX(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@media (max-width: 700px) {
+    .notification-toast-container {
+        left: 16px;
+        right: 16px;
+    }
+
+    .notification-toast {
+        width: 100%;
+    }
 }
