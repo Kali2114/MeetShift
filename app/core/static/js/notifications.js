@@ -67,7 +67,10 @@ document.addEventListener("DOMContentLoaded", () => {
             : "none";
 
         if (receivedNotificationIds.has(notificationId)) {
-            console.log("Duplicate notification ignored:", notificationId);
+            console.log(
+                "Duplicate notification ignored:",
+                notificationId
+            );
             return;
         }
 
@@ -82,4 +85,16 @@ document.addEventListener("DOMContentLoaded", () => {
     notificationSocket.onclose = () => {
         console.warn("Notification WebSocket connection closed.");
     };
+});
+
+window.addEventListener("pageshow", (event) => {
+    const navigationEntry = performance
+        .getEntriesByType("navigation")[0];
+
+    const isBackForwardNavigation =
+        navigationEntry?.type === "back_forward";
+
+    if (event.persisted || isBackForwardNavigation) {
+        window.location.reload();
+    }
 });
