@@ -6,13 +6,14 @@ import logging
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from core.models import Notification, User, UserProfile
+from core.models import Message, Notification, User, UserProfile
 from django.contrib.auth.signals import (
     user_logged_in,
     user_logged_out,
     user_login_failed,
 )
 from django.db import transaction
+from django.db.models import Q
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -79,6 +80,7 @@ def send_notification_to_websocket(notification_id):
             "id": notification.id,
             "message": notification.message,
             "meeting_id": notification.meeting_id,
+            "conversation_id": notification.conversation_id,
             "unread_count": unread_count,
         },
     )
@@ -98,3 +100,63 @@ def send_notification_websocket(sender, instance, created, **kwargs):
         return
 
     transaction.on_commit(lambda: send_notification_to_websocket(instance.id))
+
+
+def send_message_to_websocket(message_id):
+    """Send message data to the other participant's WebSocket group."""
+    message = Message.objects.select_related("conversation", "sender").get(
+        id=message_id
+    )
+    conversation = message.conversation
+    recipient = conversation.other_participant(message.sender)
+
+    unread_count = (
+        Message.objects.filter(
+            conversation=conversation,
+            is_read=False,
+        )
+        .exclude(sender=recipient)
+        .count()
+    )
+
+    total_unread_count = (
+        Message.objects.filter(
+            Q(conversation__user1=recipient) | Q(conversation__user2=recipient),
+            is_read=False,
+        )
+        .exclude(sender=recipient)
+        .count()
+    )
+
+    group_name = f"notifications_user_{recipient.id}"
+
+    logger.info(
+        "Sending conversation update WebSocket event group=%s unread_count=%s",
+        group_name,
+        unread_count,
+    )
+
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "conversation.update",
+            "kind": "conversation_update",
+            "id": message.id,
+            "conversation_id": conversation.id,
+            "message": message.content,
+            "sender_name": message.sender.name,
+            "unread_count": unread_count,
+            "total_unread_count": total_unread_count,
+        },
+    )
+
+
+@receiver(post_save, sender=Message)
+def send_message_websocket(sender, instance, created, **kwargs):
+    """Send WebSocket event to the recipient after a message is committed."""
+    if not created:
+        return
+
+    transaction.on_commit(lambda: send_message_to_websocket(instance.id))

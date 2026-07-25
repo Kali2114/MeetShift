@@ -36,6 +36,21 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 "id": event["id"],
                 "message": event["message"],
                 "meeting_id": event["meeting_id"],
+                "conversation_id": event["conversation_id"],
                 "unread_count": event["unread_count"],
+            }
+        )
+
+    async def conversation_update(self, event):
+        """Send conversation update data to browser."""
+        await self.send_json(
+            {
+                "kind": event["kind"],
+                "id": event["id"],
+                "conversation_id": event["conversation_id"],
+                "message": event["message"],
+                "sender_name": event["sender_name"],
+                "unread_count": event["unread_count"],
+                "total_unread_count": event["total_unread_count"],
             }
         )

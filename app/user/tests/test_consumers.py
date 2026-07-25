@@ -74,6 +74,7 @@ class NotificationConsumerTests(TransactionTestCase):
                 "id": 12,
                 "message": "You have been invited.",
                 "meeting_id": 4,
+                "conversation_id": None,
                 "unread_count": 2,
             },
         )
@@ -86,7 +87,54 @@ class NotificationConsumerTests(TransactionTestCase):
                 "id": 12,
                 "message": "You have been invited.",
                 "meeting_id": 4,
+                "conversation_id": None,
                 "unread_count": 2,
+            },
+        )
+
+        await communicator.disconnect()
+
+    async def test_consumer_receives_conversation_update_event(self):
+        """Test conversation update event is received from user's channel group."""
+        application = URLRouter(websocket_urlpatterns)
+
+        communicator = WebsocketCommunicator(
+            application,
+            "/ws/notifications/",
+        )
+        communicator.scope["user"] = self.user
+
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        channel_layer = get_channel_layer()
+
+        await channel_layer.group_send(
+            f"notifications_user_{self.user.id}",
+            {
+                "type": "conversation.update",
+                "kind": "conversation_update",
+                "id": 42,
+                "conversation_id": 7,
+                "message": "Hello!",
+                "sender_name": "Sender",
+                "unread_count": 1,
+                "total_unread_count": 3,
+            },
+        )
+
+        response = await communicator.receive_json_from()
+
+        self.assertEqual(
+            response,
+            {
+                "kind": "conversation_update",
+                "id": 42,
+                "conversation_id": 7,
+                "message": "Hello!",
+                "sender_name": "Sender",
+                "unread_count": 1,
+                "total_unread_count": 3,
             },
         )
 
