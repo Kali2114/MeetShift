@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="new-message-page">
+    <h1>New message</h1>
+
+    {% if users %}
+        <input
+            type="text"
+            id="new-message-search"
+            class="new-message-search"
+            placeholder="Search by name..."
+            autocomplete="off"
+        >
+
+        <div class="new-message-user-list" id="new-message-user-list">
+            {% for other_user in users %}
+                <a
+                    href="{% url 'user:conversation-start' other_user.id %}"
+                    class="new-message-user-item"
+                >
+                    {{ other_user.name }}
+                </a>
+            {% endfor %}
+        </div>
+
+        <p class="messenger-empty-hint" id="new-message-no-results" style="display: none;">
+            No users match your search.
+        </p>
+    {% else %}
+        <p>No other users to message yet.</p>
+    {% endif %}
+</section>
+
+<script src="{% static 'js/new-message-search.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% load static %}
+<div class="messenger-sidebar-header">
+    <h2>Messages</h2>
+    <a href="{% url 'user:new-message' %}" class="btn">New message</a>
+</div>
+
+<div class="messenger-conversation-list">
+    {% for conversation in conversations %}
+        <a
+            href="{% url 'user:conversation-detail' conversation.id %}"
+            class="conversation-item {% if conversation.unread_count %}unread{% endif %} {% if conversation.id == active_conversation_id %}active{% endif %}"
+            data-conversation-id="{{ conversation.id }}"
+        >
+            <img
+                class="conversation-avatar"
+                src="{% if conversation.other_user.user_profile.avatar %}{{ conversation.other_user.user_profile.avatar.url }}{% else %}{% static 'img/no-avatar.jpg' %}{% endif %}"
+                alt=""
+            >
+
+            <div class="conversation-item-body">
+                <div class="conversation-participant">
+                    {{ conversation.other_user.name }}
+                </div>
+
+                <div class="conversation-date">
+                    {{ conversation.last_activity|date:"d M Y H:i" }}
+                </div>
+            </div>
+
+            {% if conversation.unread_count %}
+                <span class="conversation-unread-count">{{ conversation.unread_count }}</span>
+            {% endif %}
+        </a>
+    {% empty %}
+        <p class="messenger-empty-hint">No conversations yet.</p>
+    {% endfor %}
+</div>

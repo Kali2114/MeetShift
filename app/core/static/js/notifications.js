@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const badge = document.querySelector("#notification-badge");
+    const messagesBadge = document.querySelector("#messages-badge");
     const toastContainer = document.querySelector(
         "#notification-toast-container"
     );
@@ -36,7 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const title = document.createElement("p");
         title.classList.add("notification-toast-title");
-        title.textContent = "New notification";
+        title.textContent = data.conversation_id ? "New message" : "New notification";
 
         const message = document.createElement("p");
         message.classList.add("notification-toast-message");
@@ -54,8 +55,80 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     };
 
+    const appendMessageToThread = (threadContainer, data) => {
+        const item = document.createElement("div");
+        item.classList.add("message-item", "message-item-received");
+        item.dataset.messageId = data.id;
+
+        const content = document.createElement("p");
+        content.classList.add("message-content");
+        content.textContent = data.message;
+
+        item.append(content);
+        threadContainer.appendChild(item);
+        threadContainer.scrollTop = threadContainer.scrollHeight;
+    };
+
+    const handleConversationUpdate = (data) => {
+        if (messagesBadge) {
+            messagesBadge.textContent = data.total_unread_count;
+            messagesBadge.style.display = data.total_unread_count > 0
+                ? "inline-block"
+                : "none";
+        }
+
+        const threadContainer = document.querySelector(
+            `.messages-thread[data-conversation-id="${data.conversation_id}"]`
+        );
+
+        if (threadContainer) {
+            appendMessageToThread(threadContainer, data);
+            return;
+        }
+
+        const conversationsList = document.querySelector(
+            ".messenger-conversation-list"
+        );
+
+        if (!conversationsList) {
+            return;
+        }
+
+        const row = conversationsList.querySelector(
+            `[data-conversation-id="${data.conversation_id}"]`
+        );
+
+        if (!row) {
+            window.location.reload();
+            return;
+        }
+
+        let unreadBadge = row.querySelector(".conversation-unread-count");
+
+        if (data.unread_count > 0) {
+            row.classList.add("unread");
+
+            if (!unreadBadge) {
+                unreadBadge = document.createElement("span");
+                unreadBadge.classList.add("conversation-unread-count");
+                row.appendChild(unreadBadge);
+            }
+
+            unreadBadge.textContent = data.unread_count;
+        }
+
+        conversationsList.prepend(row);
+    };
+
     notificationSocket.onmessage = (event) => {
         const data = JSON.parse(event.data);
+
+        if (data.kind === "conversation_update") {
+            console.log("Received conversation update:", data);
+            handleConversationUpdate(data);
+            return;
+        }
+
         const notificationId = String(data.id);
         const unreadCount = Number(data.unread_count);
 
@@ -85,6 +158,35 @@ document.addEventListener("DOMContentLoaded", () => {
     notificationSocket.onclose = () => {
         console.warn("Notification WebSocket connection closed.");
     };
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const threadContainer = document.querySelector(".messages-thread");
+
+    if (threadContainer) {
+        threadContainer.scrollTop = threadContainer.scrollHeight;
+    }
+
+    const messageForm = document.querySelector(".message-form");
+    const messageInput = messageForm?.querySelector("textarea");
+
+    if (!messageForm || !messageInput) {
+        return;
+    }
+
+    messageInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (messageInput.value.trim() === "") {
+            return;
+        }
+
+        messageForm.submit();
+    });
 });
 
 window.addEventListener("pageshow", (event) => {

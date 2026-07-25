@@ -33,6 +33,18 @@
                         <a href="{% url 'meeting:invitations' %}">
                             Invitations
                         </a>
+
+                        <a href="{% url 'user:conversation-list' %}" class="notification-link">
+                            Messages
+
+                            <span
+                                id="messages-badge"
+                                class="notification-badge"
+                                style="{% if not unread_messages_count %}display: none;{% endif %}"
+                            >
+                                {{ unread_messages_count }}
+                            </span>
+                        </a>
                     {% endif %}
                 </nav>
 

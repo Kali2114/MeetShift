@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="messenger-page">
+    <div class="messenger-layout">
+        <aside class="messenger-sidebar">
+            {% include "user/_conversation_sidebar.html" %}
+        </aside>
+
+        <div class="messenger-panel">
+            <div class="messenger-panel-empty">
+                <p>Select a conversation to start chatting.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

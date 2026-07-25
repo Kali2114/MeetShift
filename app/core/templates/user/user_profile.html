@@ -41,6 +41,10 @@
                     <a href="{% url 'user:profile-edit' %}" class="btn">
                         Edit profile
                     </a>
+                {% else %}
+                    <a href="{% url 'user:conversation-start' profile.user.id %}" class="btn">
+                        Message
+                    </a>
                 {% endif %}
             </div>
         </div>
