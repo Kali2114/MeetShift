@@ -2,7 +2,8 @@
 Context processors for user app.
 """
 
-from core.models import Notification
+from core.models import Message, Notification
+from django.db.models import Q
 
 
 def unread_notifications_count(request):
@@ -15,4 +16,19 @@ def unread_notifications_count(request):
             user=request.user,
             is_read=False,
         ).count()
+    }
+
+
+def unread_messages_count(request):
+    """Return unread message count for current user."""
+    if not request.user.is_authenticated:
+        return {"unread_messages_count": 0}
+
+    return {
+        "unread_messages_count": Message.objects.filter(
+            Q(conversation__user1=request.user) | Q(conversation__user2=request.user),
+            is_read=False,
+        )
+        .exclude(sender=request.user)
+        .count()
     }
