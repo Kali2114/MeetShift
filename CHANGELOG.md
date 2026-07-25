@@ -6,16 +6,46 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
-### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
+### Added
 
 #### Messaging
 - Direct messages between users.
-- Real-time private chat using WebSockets.
+- Conversation model.
+- Message model.
+- Conversation manager for safe conversation creation.
 - Conversation list.
-- Unread message counters.
-- Message notifications.
-- Message read status.
+- Conversation detail page.
+- New conversation page with live name search/filter.
+- Facebook Messenger-inspired two-column layout.
+- Real-time private messaging using Django Channels.
+- WebSocket conversation updates.
+- Live message delivery.
+- Enter to send messages, Shift+Enter for multiline messages.
 - Conversation history.
+- Unread message counters, including a dedicated live-updating badge on the
+  Messages nav link.
+- Message notifications integrated with the notification system, with their
+  own toast title ("New message") and redirect to the conversation thread.
+- Message read status.
+- Conversation previews with last message.
+- Conversation ordering by latest activity.
+- Sidebar avatars for conversation participants.
+
+#### Fixed
+- Production `SECRET_KEY` no longer silently falls back to a hardcoded
+  default when the environment variable is missing or misnamed.
+- Registration now enforces the configured password strength validators.
+- Notification WebSocket events are no longer sent twice per notification.
+- User emails are validated for format, not just presence.
+- Meeting detail page action buttons (Invite/Edit/Delete) restyled to match
+  the rest of the UI instead of rendering as plain links.
+
+### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
+
+#### Messaging polish
+- Responsive messaging layout for small screens (not yet built or verified
+  on mobile).
+- Conversation header avatar (currently sidebar-only).
 
 #### Meeting rooms
 - Dedicated rooms connected to meetings.
@@ -26,18 +56,9 @@ All notable changes to this project will be documented in this file.
 - Unread room message counters.
 - Notifications for new room activity.
 
-#### Video meetings
-- Possible integration with Google Meet.
-- Automatic generation of video meeting links.
-- Video meeting links connected to MeetShift meetings.
-- Improved collaboration features for online meetings.
-
 #### Frontend
-- Improved messaging interface.
-- Conversation sidebar.
 - Meeting room interface.
-- Better real-time state handling.
-- Improved notification and unread state synchronization.
+- Better real-time state handling (e.g. WebSocket reconnection/backoff).
 
 #### Infrastructure
 - WebSocket scaling improvements.
@@ -102,128 +123,4 @@ All notable changes to this project will be documented in this file.
 
 ## [v1.1.0] — Real-Time Notifications & Infrastructure Hardening
 
-### Released
-2026-07-19
-
-### Added
-
-#### Real-time notifications
-- WebSocket-based real-time notifications using Django Channels.
-- Redis channel layer using `channels-redis`.
-- Daphne ASGI application server.
-- Live unread notification badge updates.
-- Real-time notification toast messages.
-- Navigation from notification toast to the related meeting.
-- Duplicate notification protection on the frontend.
-- Browser back and forward navigation handling for notification state.
-- Nginx WebSocket proxy configuration for `/ws/`.
-
-#### Infrastructure
-- Terraform configuration for existing AWS infrastructure.
-- Imported the existing AWS EC2 instance into Terraform state.
-- Imported the existing Security Group into Terraform state.
-- Imported the existing Elastic IP into Terraform state.
-- Testinfra checks for local and production infrastructure.
-- Production deployment synchronization with the `main` branch.
-- Automated production health checks.
-- Database backup restore verification.
-- Production rollback workflow.
-- Swap space on the production server.
-- Grafana alerts for application availability.
-- Grafana alerts for HTTP 5xx responses.
-
-#### Security
-- CodeQL analysis for Python.
-- CodeQL analysis for GitHub Actions.
-- Trivy Docker image vulnerability scanning.
-- Trivy Terraform misconfiguration scanning.
-- Dependabot configuration.
-- Dependency review workflow.
-- Branch protection rules for `main`.
-- Authentication event logging and monitoring.
-
-### Changed
-- Replaced Gunicorn with Daphne in production.
-- Updated the production Docker Compose configuration for ASGI.
-- Updated Nginx to support WebSocket connections.
-- Updated the deployment workflow to synchronize repository files before deployment.
-- Recreated application, Celery and Nginx containers during deployment.
-- Required IMDSv2 for the production EC2 instance.
-- Upgraded the production EC2 instance to `t3.small`.
-- Limited GitHub Actions checks to pushes and pull requests targeting `main`.
-- Separated production and development dependency files.
-- Reduced production image dependencies.
-- Updated Pillow and development tooling dependencies.
-- Improved browser navigation handling for notification badge state.
-
-### Security
-- Removed permanent SSH credentials from the deployment process.
-- Continued deployment through AWS OIDC and Systems Manager.
-- Added automated dependency monitoring.
-- Added static security analysis.
-- Added infrastructure security scanning.
-- Documented accepted outbound network access.
-- Documented the planned migration to an encrypted EC2 root volume.
-- Ignored a confirmed Trivy false positive originating from an Autobahn example key.
-
----
-
-## [v1.0.0] — Production Release
-
-### Added
-
-#### Application
-- User registration and authentication.
-- User profiles with avatar upload.
-- Meeting creation, editing and deletion.
-- Meeting invitations.
-- Invitation acceptance and rejection.
-- Meeting participant management.
-- Notifications.
-- Email integration.
-- Asynchronous email processing.
-- Meeting calendar dashboard.
-
-#### Backend
-- Django application.
-- PostgreSQL database.
-- Redis.
-- Celery background worker.
-- Automated tests.
-- Coverage reporting.
-- PostgreSQL version matrix in CI.
-
-#### Production
-- Production deployment on AWS EC2.
-- Custom domain: `https://meetshift.org`.
-- HTTPS with Cloudflare.
-- Nginx reverse proxy.
-- Gunicorn WSGI application server.
-- Docker Compose production stack.
-- GitHub Actions CI/CD pipeline.
-- Docker Hub image publishing.
-- Deployment through AWS OIDC and Systems Manager.
-
-#### Monitoring
-- Prometheus monitoring.
-- Grafana dashboards.
-- Loki log aggregation.
-- Promtail log collection.
-- Application metrics endpoint.
-- Production health endpoint.
-
----
-
-## Version roadmap
-
-### v1.0.0
-Production-ready meeting scheduling application.
-
-### v1.1.0
-Real-time notifications, infrastructure as code, security scanning, monitoring and deployment hardening.
-
-### v2.0.0
-Direct messages, real-time chat, meeting rooms, presence and possible Google Meet integration.
-
-### v3.0.0
-AI meeting assistant, agenda generation, summaries, action items, intelligent scheduling and agent-based workflows.
+...
