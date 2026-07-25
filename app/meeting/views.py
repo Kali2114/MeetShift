@@ -21,7 +21,11 @@ from django.views.generic import (
     View,
 )
 from meeting.forms import InviteParticipantForm, MeetingForm
-from meeting.utils import user_has_meeting_conflict, user_meetings_queryset
+from meeting.utils import (
+    meeting_calendar_events,
+    user_has_meeting_conflict,
+    user_meetings_queryset,
+)
 from user.services import create_notification
 
 logger = logging.getLogger(__name__)
@@ -33,9 +37,9 @@ class IndexView(LoginRequiredMixin, TemplateView):
     template_name = "index.html"
 
     def get_context_data(self, **kwargs):
-        """Return meetings for current user."""
+        """Return calendar events for current user's meetings."""
         context = super().get_context_data(**kwargs)
-        context["meetings"] = user_meetings_queryset(self.request.user)
+        context["calendar_events"] = meeting_calendar_events(self.request.user)
 
         return context
 

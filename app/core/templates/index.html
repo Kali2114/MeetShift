@@ -10,29 +10,76 @@
         <div id="calendar"></div>
     </section>
 
+    {{ calendar_events|json_script:"calendar-events-data" }}
+
     <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const calendarEl = document.getElementById("calendar");
+            const events = JSON.parse(
+                document.getElementById("calendar-events-data").textContent
+            );
 
             const calendar = new FullCalendar.Calendar(calendarEl, {
                 initialView: "dayGridMonth",
                 height: "auto",
                 timeZone: "local",
-                events: [
-                    {% for meeting in meetings %}
-                        {% if meeting.started_at %}
-                            {
-                                title: "{{ meeting.title|escapejs }}",
-                                start: "{{ meeting.started_at|date:'c' }}",
-                                end: "{{ meeting.ended_at|date:'c' }}",
-                                url: "{% url 'meeting:detail-meeting' meeting.id %}"
-                            },
-                        {% endif %}
-                    {% endfor %}
-                ]
+                events: events,
+                eventContent: function (arg) {
+                    const participants = arg.event.extendedProps.participants || [];
+                    const extraCount = arg.event.extendedProps.extra_count || 0;
+
+                    const wrapper = document.createElement("div");
+                    wrapper.classList.add("calendar-event-content");
+
+                    if (arg.timeText) {
+                        const time = document.createElement("span");
+                        time.classList.add("fc-event-time");
+                        time.textContent = arg.timeText;
+                        wrapper.appendChild(time);
+                    }
+
+                    const title = document.createElement("span");
+                    title.classList.add("fc-event-title");
+                    title.textContent = arg.event.title;
+                    wrapper.appendChild(title);
+
+                    if (participants.length > 0 || extraCount > 0) {
+                        const avatars = document.createElement("span");
+                        avatars.classList.add("calendar-event-avatars");
+
+                        participants.forEach(function (participant) {
+                            const avatarWrapper = document.createElement("span");
+                            avatarWrapper.classList.add("calendar-avatar-wrapper");
+
+                            if (participant.status === "DEC") {
+                                avatarWrapper.classList.add("calendar-avatar-declined");
+                            }
+
+                            const img = document.createElement("img");
+                            img.src = participant.avatar_url;
+                            img.alt = participant.name;
+                            img.title = participant.name;
+                            img.classList.add("calendar-avatar");
+
+                            avatarWrapper.appendChild(img);
+                            avatars.appendChild(avatarWrapper);
+                        });
+
+                        if (extraCount > 0) {
+                            const extra = document.createElement("span");
+                            extra.classList.add("calendar-avatar-extra");
+                            extra.textContent = "+" + extraCount;
+                            avatars.appendChild(extra);
+                        }
+
+                        wrapper.appendChild(avatars);
+                    }
+
+                    return { domNodes: [wrapper] };
+                }
             });
 
             calendar.render();
