@@ -65,6 +65,11 @@ class ModelTests(TestCase):
         with self.assertRaises(ValueError):
             utils.create_user(name="")
 
+    def test_new_user_with_invalid_email_raise_error(self):
+        """Test raises ValueError when creating user with malformed email."""
+        with self.assertRaises(ValueError):
+            utils.create_user(email="not-an-email")
+
     def test_create_superuser(self):
         """Test creating a superuser successful."""
         user = get_user_model().objects.create_superuser(

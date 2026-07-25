@@ -31,9 +31,8 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, name, password=None, **kwargs):
         """Create, save and return a new user."""
-        check_email_and_name(email, name)
-
         normalized_email = self.normalize_email(email).strip().lower()
+        check_email_and_name(normalized_email, name)
 
         user = self.model(
             email=normalized_email,
@@ -47,9 +46,8 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, name, password=None, **kwargs):
         """Create, save and return a new superuser."""
-        check_email_and_name(email, name)
-
         normalized_email = self.normalize_email(email).strip().lower()
+        check_email_and_name(normalized_email, name)
 
         user = self.model(
             email=normalized_email,
