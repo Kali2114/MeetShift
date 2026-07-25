@@ -66,3 +66,18 @@ def create_notification(**params):
     }
     default_notification.update(**params)
     return models.Notification.objects.create(**default_notification)
+
+
+def create_conversation(user1, user2):
+    """Create and return a new conversation between two users."""
+    conversation, _ = models.Conversation.objects.get_or_create_between(user1, user2)
+    return conversation
+
+
+def create_message(**params):
+    """Create and return a new message."""
+    default_message = {
+        "content": "test_message",
+    }
+    default_message.update(**params)
+    return models.Message.objects.create(**default_message)

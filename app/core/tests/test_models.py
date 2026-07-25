@@ -210,3 +210,112 @@ class ModelTests(TestCase):
         )
 
         self.assertFalse(notification.is_read)
+
+    def test_create_conversation(self):
+        """Test creating conversation successful."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+
+        conversation = utils.create_conversation(user_a, user_b)
+
+        self.assertEqual(
+            str(conversation),
+            f"Conversation between {conversation.user1} and {conversation.user2}",
+        )
+
+    def test_conversation_users_stored_in_canonical_order(self):
+        """Test conversation always stores the lower-pk user as user1."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+
+        conversation_forward = utils.create_conversation(user_a, user_b)
+        conversation_reversed = utils.create_conversation(user_b, user_a)
+
+        self.assertEqual(conversation_forward.id, conversation_reversed.id)
+        self.assertEqual(
+            conversation_forward.user1, min(user_a, user_b, key=lambda u: u.pk)
+        )
+
+    def test_duplicate_conversation_pair_raises_error(self):
+        """Test creating a duplicate conversation for the same pair raises error."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        user1, user2 = sorted([user_a, user_b], key=lambda u: u.pk)
+
+        models.Conversation.objects.create(user1=user1, user2=user2)
+
+        with self.assertRaises(IntegrityError):
+            models.Conversation.objects.create(user1=user1, user2=user2)
+
+    def test_conversation_with_self_raises_error(self):
+        """Test creating a conversation with the same user twice raises error."""
+        user = utils.create_user()
+
+        with self.assertRaises(IntegrityError):
+            models.Conversation.objects.create(user1=user, user2=user)
+
+    def test_create_message(self):
+        """Test creating message successful."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        message = utils.create_message(
+            conversation=conversation,
+            sender=user_a,
+            content="Hello!",
+        )
+
+        self.assertEqual(
+            str(message),
+            f"Message from {user_a} in conversation {conversation.id}",
+        )
+
+    def test_message_default_is_unread(self):
+        """Test message is unread by default."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        message = utils.create_message(conversation=conversation, sender=user_a)
+
+        self.assertFalse(message.is_read)
+
+    def test_messages_ordered_by_created_at(self):
+        """Test messages are returned in chronological order."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        first = utils.create_message(
+            conversation=conversation, sender=user_a, content="first"
+        )
+        second = utils.create_message(
+            conversation=conversation, sender=user_b, content="second"
+        )
+
+        self.assertEqual(list(conversation.messages.all()), [first, second])
+
+    def test_conversation_other_participant(self):
+        """Test other_participant returns the participant that isn't given."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        self.assertEqual(conversation.other_participant(user_a), user_b)
+        self.assertEqual(conversation.other_participant(user_b), user_a)
+
+    def test_create_notification_with_conversation(self):
+        """Test notification can reference a conversation instead of a meeting."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        notification = models.Notification.objects.create(
+            user=user_a,
+            conversation=conversation,
+            message="New message from user_b",
+        )
+
+        self.assertEqual(notification.conversation, conversation)
+        self.assertIsNone(notification.meeting)

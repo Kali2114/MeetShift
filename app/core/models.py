@@ -200,9 +200,77 @@ class Notification(models.Model):
         blank=True,
         null=True,
     )
+    conversation = models.ForeignKey(
+        "Conversation",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        blank=True,
+        null=True,
+    )
     message = models.CharField(max_length=255)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.message} to {self.user.name}"
+
+
+class ConversationManager(models.Manager):
+    """Manager for conversations."""
+
+    def get_or_create_between(self, user_a, user_b):
+        """Return the conversation between two users, creating it in canonical order."""
+        user1, user2 = sorted([user_a, user_b], key=lambda u: u.pk)
+        return self.get_or_create(user1=user1, user2=user2)
+
+
+class Conversation(models.Model):
+    """Model for conversation object."""
+
+    user1 = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="conversations_user1"
+    )
+    user2 = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="conversations_user2"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ConversationManager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user1", "user2"], name="unique_conversation_pair"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(user1_id__lt=models.F("user2_id")),
+                name="conversation_user1_lt_user2",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Conversation between {self.user1} and {self.user2}"
+
+    def other_participant(self, user):
+        """Return the participant that is not the given user."""
+        return self.user2 if self.user1_id == user.id else self.user1
+
+
+class Message(models.Model):
+    """Model for message object."""
+
+    conversation = models.ForeignKey(
+        "Conversation", on_delete=models.CASCADE, related_name="messages"
+    )
+    sender = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="sent_messages"
+    )
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Message from {self.sender} in conversation {self.conversation_id}"
