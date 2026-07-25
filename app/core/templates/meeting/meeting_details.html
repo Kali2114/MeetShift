@@ -56,9 +56,9 @@
 
     {% if meeting.organizer == user %}
         <div class="meeting-actions">
-            <a href="{% url 'meeting:invite-participant' meeting.id %}">Invite participant</a>
-            <a href="{% url 'meeting:edit-meeting' meeting.id %}">Edit</a>
-            <a href="{% url 'meeting:delete-meeting' meeting.id %}">Delete</a>
+            <a href="{% url 'meeting:invite-participant' meeting.id %}" class="action-btn invite-btn">Invite participant</a>
+            <a href="{% url 'meeting:edit-meeting' meeting.id %}" class="action-btn edit-btn">Edit</a>
+            <a href="{% url 'meeting:delete-meeting' meeting.id %}" class="action-btn delete-btn">Delete</a>
         </div>
     {% endif %}
 </div>
