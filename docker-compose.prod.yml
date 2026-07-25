@@ -14,7 +14,7 @@ services:
       - app-logs:/app/logs
     environment:
       - DEBUG=${DEBUG:-False}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,app}
       - DB_HOST=db
       - DB_NAME=${DB_NAME}
@@ -64,7 +64,7 @@ services:
       - app-logs:/app/logs
     environment:
       - DEBUG=${DEBUG:-False}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY:-dev-secret-key}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,app}
       - DB_HOST=db
       - DB_NAME=${DB_NAME}

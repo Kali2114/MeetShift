@@ -32,6 +32,7 @@ jobs:
       EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
       EMAIL_PORT: 587
       POSTGRES_IMAGE: postgres:${{ matrix.postgres-version }}
+      SECRET_KEY: ci-test-secret-key-not-for-production
 
     steps:
       - name: Checkout repository
