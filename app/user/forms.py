@@ -2,7 +2,7 @@
 Forms for user app.
 """
 
-from core.models import User, UserProfile
+from core.models import Message, User, UserProfile
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib.auth.password_validation import validate_password
@@ -96,3 +96,16 @@ class UserAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(self.inactive_error)
 
         return super().clean()
+
+
+class MessageForm(forms.ModelForm):
+    """Form for sending a message."""
+
+    class Meta:
+        model = Message
+        fields = ["content"]
+        widgets = {
+            "content": forms.Textarea(
+                attrs={"rows": 1, "placeholder": "Write a message..."}
+            ),
+        }

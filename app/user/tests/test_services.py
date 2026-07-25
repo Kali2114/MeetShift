@@ -34,3 +34,28 @@ class CreateNotificationServiceTests(TestCase):
                 message="You have been invited.",
             ).exists()
         )
+
+    def test_create_notification_with_conversation(self):
+        """Test notification can be created with a conversation instead."""
+        user = utils.create_user()
+        other_user = utils.create_user(
+            email="other@example.com",
+            name="Other",
+        )
+        conversation = utils.create_conversation(user, other_user)
+
+        notification = create_notification(
+            user=user,
+            conversation=conversation,
+            message="New message from Other.",
+        )
+
+        self.assertTrue(
+            Notification.objects.filter(
+                id=notification.id,
+                user=user,
+                conversation=conversation,
+                meeting=None,
+                message="New message from Other.",
+            ).exists()
+        )

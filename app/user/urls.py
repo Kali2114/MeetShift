@@ -90,4 +90,29 @@ urlpatterns = [
         views.ActivateAccountView.as_view(),
         name="activate-account",
     ),
+    path(
+        "conversations/",
+        views.ConversationListView.as_view(),
+        name="conversation-list",
+    ),
+    path(
+        "conversations/new/",
+        views.NewMessageView.as_view(),
+        name="new-message",
+    ),
+    path(
+        "conversations/start/<int:user_id>/",
+        views.StartConversationView.as_view(),
+        name="conversation-start",
+    ),
+    path(
+        "conversations/<int:pk>/",
+        views.ConversationDetailView.as_view(),
+        name="conversation-detail",
+    ),
+    path(
+        "conversations/<int:pk>/send/",
+        views.SendMessageView.as_view(),
+        name="message-send",
+    ),
 ]
