@@ -33,6 +33,8 @@ All notable changes to this project will be documented in this file.
 - Responsive two-column layout: on narrow screens the conversation list and
   an open thread each take the full width, with a back link to return to
   the list.
+- Conversation header shows the other participant's avatar, not just the
+  sidebar.
 
 #### Meeting rooms
 - Dedicated room per meeting, auto-created alongside the meeting.
@@ -65,9 +67,6 @@ All notable changes to this project will be documented in this file.
   with the rest of the chat box.
 
 ### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
-
-#### Messaging polish
-- Conversation header avatar (currently sidebar-only).
 
 #### Frontend
 - Dark mode.

@@ -660,6 +660,30 @@ class PrivateUserViewsTests(TestCase):
         self.assertTemplateUsed(res, "user/conversation_detail.html")
         self.assertContains(res, "Hello there!")
 
+    def test_conversation_detail_shows_default_avatar_for_other_user(self):
+        """Test conversation header shows the default avatar when none is set."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertContains(res, "no-avatar")
+
+    def test_conversation_detail_shows_uploaded_avatar_for_other_user(self):
+        """Test conversation header shows the other user's uploaded avatar."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        other_user.user_profile.avatar = utils.create_test_image()
+        other_user.user_profile.save()
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertContains(res, other_user.user_profile.avatar.url)
+
     def test_conversation_detail_includes_conversations_sidebar_context(self):
         """Test conversation detail page context includes the sidebar list."""
         other_user = utils.create_user(name="other", email="other@example.com")
