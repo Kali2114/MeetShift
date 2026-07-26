@@ -31,8 +31,11 @@ def create_test_image():
 
 def create_meeting(**params):
     """Create and return a new meeting."""
+    started_at = timezone.now()
     default_meeting = {
         "title": "test_title",
+        "started_at": started_at,
+        "ended_at": started_at + timedelta(hours=1),
     }
     default_meeting.update(**params)
     return models.Meeting.objects.create(**default_meeting)

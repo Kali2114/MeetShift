@@ -14,15 +14,6 @@ from meeting.utils import meeting_calendar_events
 class MeetingCalendarEventsTests(TestCase):
     """Tests for meeting_calendar_events."""
 
-    def test_excludes_meetings_without_start_time(self):
-        """Test meetings without a start time are excluded."""
-        organizer = utils.create_user()
-        utils.create_meeting(organizer=organizer, title="no start")
-
-        events = meeting_calendar_events(organizer)
-
-        self.assertEqual(events, [])
-
     def test_includes_basic_meeting_fields(self):
         """Test event includes title, url and an empty participant list."""
         organizer = utils.create_user()

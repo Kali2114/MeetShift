@@ -102,8 +102,8 @@ class Meeting(models.Model):
         "User", on_delete=models.CASCADE, related_name="organized_meetings"
     )
     status = models.CharField(max_length=3, choices=enums.STATUS_CHOICES, default="DRF")
-    started_at = models.DateTimeField(blank=True, null=True)
-    ended_at = models.DateTimeField(blank=True, null=True)
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

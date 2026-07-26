@@ -199,9 +199,12 @@ class PrivateMeetingViewsTests(TestCase):
 
     def test_create_view(self):
         """Test create view successful."""
+        started_at = timezone.now()
         payload = {
             "title": "test_title",
             "description": "test_description",
+            "started_at": started_at,
+            "ended_at": started_at + timedelta(hours=1),
         }
         res = self.client.post(MEETING_CREATE_URL, payload)
 
@@ -217,6 +220,8 @@ class PrivateMeetingViewsTests(TestCase):
         payload = {
             "title": "new_title",
             "description": "new_description",
+            "started_at": meeting.started_at,
+            "ended_at": meeting.ended_at,
         }
         res = self.client.post(get_meeting_edit_url(meeting.id), payload)
         meeting.refresh_from_db()
