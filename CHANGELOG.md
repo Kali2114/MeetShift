@@ -55,6 +55,11 @@ All notable changes to this project will be documented in this file.
   participants (excluding the sender) are notified through the existing
   notification system when a room message is sent.
 
+#### Frontend
+- Dark mode: a nav toggle switches themes and remembers the choice, falling
+  back to the system's light/dark preference on first visit. Covers the
+  full site plus the FullCalendar dashboard view.
+
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
   default when the environment variable is missing or misnamed.
@@ -69,7 +74,6 @@ All notable changes to this project will be documented in this file.
 ### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
 
 #### Frontend
-- Dark mode.
 - Meeting room chat UI polish (currently a basic thread + input, reusing DM
   styling as-is).
 - Better real-time state handling (e.g. WebSocket reconnection/backoff).
