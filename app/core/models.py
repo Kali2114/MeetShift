@@ -323,3 +323,23 @@ class RoomMessage(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} in room {self.room_id}"
+
+
+class RoomPresence(models.Model):
+    """Model tracking a user's active WebSocket connections to a room."""
+
+    room = models.ForeignKey("Room", on_delete=models.CASCADE, related_name="presences")
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="room_presences"
+    )
+    connection_count = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "user"], name="unique_room_presence"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} present in {self.room}"

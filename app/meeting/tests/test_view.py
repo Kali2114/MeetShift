@@ -731,6 +731,19 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertContains(res, get_room_message_send_url(meeting.id))
 
+    def test_room_detail_includes_online_users(self):
+        """Test room detail page context includes currently online users."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_presence(room=meeting.room, user=self.user)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertIn(self.user, res.context["online_users"])
+
     def test_room_detail_shows_inactive_state(self):
         """Test room detail page shows the room is not active."""
         meeting = utils.create_meeting(

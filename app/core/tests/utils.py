@@ -106,3 +106,8 @@ def create_room_message(**params):
     }
     default_message.update(**params)
     return models.RoomMessage.objects.create(**default_message)
+
+
+def create_room_presence(**params):
+    """Create and return a new room presence."""
+    return models.RoomPresence.objects.create(**params)

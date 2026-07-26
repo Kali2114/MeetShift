@@ -8,6 +8,7 @@ from asgiref.sync import sync_to_async
 from channels.layers import get_channel_layer
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
+from core.models import RoomPresence
 from core.tests import utils
 from django.contrib.auth.models import AnonymousUser
 from django.test import TransactionTestCase, override_settings
@@ -146,3 +147,54 @@ class RoomConsumerTests(TransactionTestCase):
         )
 
         await communicator.disconnect()
+
+    async def test_connect_marks_user_present_and_broadcasts(self):
+        """Test connecting creates a presence row and broadcasts the online list."""
+        communicator, connected = await self.connect(self.organizer)
+        self.assertTrue(connected)
+
+        response = await communicator.receive_json_from()
+
+        self.assertEqual(response["kind"], "room_presence")
+        self.assertEqual(
+            response["online_users"],
+            [{"id": self.organizer.id, "name": self.organizer.name}],
+        )
+
+        presence_exists = await sync_to_async(
+            RoomPresence.objects.filter(
+                room=self.meeting.room, user=self.organizer
+            ).exists
+        )()
+        self.assertTrue(presence_exists)
+
+        await communicator.disconnect()
+
+    async def test_disconnect_marks_user_absent_and_broadcasts(self):
+        """Test disconnecting removes the presence row and broadcasts the update."""
+        participant = await sync_to_async(utils.create_user)(
+            name="participant", email="participant@example.com"
+        )
+        await sync_to_async(utils.create_meeting_participant)(
+            meeting=self.meeting, user=participant, invitation_status="ACC"
+        )
+
+        communicator, connected = await self.connect(self.organizer)
+        self.assertTrue(connected)
+        await communicator.receive_json_from()  # organizer's own join broadcast
+
+        second_communicator, second_connected = await self.connect(participant)
+        self.assertTrue(second_connected)
+
+        await communicator.receive_json_from()  # organizer sees participant join
+        await second_communicator.receive_json_from()  # participant's own join
+
+        await communicator.disconnect()
+
+        response = await second_communicator.receive_json_from()
+
+        self.assertEqual(response["kind"], "room_presence")
+        self.assertEqual(len(response["online_users"]), 1)
+        self.assertEqual(response["online_users"][0]["id"], participant.id)
+
+        await second_communicator.disconnect()

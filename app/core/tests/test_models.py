@@ -425,3 +425,23 @@ class ModelTests(TestCase):
         )
 
         self.assertEqual(list(room.messages.all()), [first, second])
+
+    def test_create_room_presence(self):
+        """Test creating room presence successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        presence = utils.create_room_presence(room=room, user=organizer)
+
+        self.assertEqual(str(presence), f"{organizer} present in {room}")
+        self.assertEqual(presence.connection_count, 1)
+
+    def test_room_presence_unique_per_room_and_user(self):
+        """Test only one presence row can exist per room and user."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        utils.create_room_presence(room=room, user=organizer)
+
+        with self.assertRaises(IntegrityError):
+            utils.create_room_presence(room=room, user=organizer)

@@ -23,6 +23,7 @@ from django.views.generic import (
 from meeting.forms import InviteParticipantForm, MeetingForm, RoomMessageForm
 from meeting.utils import (
     meeting_calendar_events,
+    online_room_users,
     user_accessible_room_meetings,
     user_has_meeting_conflict,
     user_meetings_queryset,
@@ -264,9 +265,10 @@ class RoomDetailView(LoginRequiredMixin, DetailView):
         return user_accessible_room_meetings(self.request.user)
 
     def get_context_data(self, **kwargs):
-        """Attach the room's message form."""
+        """Attach the room's message form and currently online users."""
         context = super().get_context_data(**kwargs)
         context["message_form"] = RoomMessageForm()
+        context["online_users"] = online_room_users(self.object.room)
 
         return context
 

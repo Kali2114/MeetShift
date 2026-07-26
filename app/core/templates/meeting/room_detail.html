@@ -8,6 +8,13 @@
     {% if meeting.room.is_active %}
         <p>Room is active.</p>
 
+        <p class="room-online-users">
+            Online:
+            <span id="room-online-list">
+                {% for online_user in online_users %}{{ online_user.name }}{% if not forloop.last %}, {% endif %}{% empty %}Nobody yet{% endfor %}
+            </span>
+        </p>
+
         <div
             class="messages-thread room-chat-thread"
             data-meeting-id="{{ meeting.id }}"

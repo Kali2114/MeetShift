@@ -35,6 +35,18 @@ document.addEventListener("DOMContentLoaded", () => {
         threadContainer.scrollTop = threadContainer.scrollHeight;
     };
 
+    const onlineList = document.querySelector("#room-online-list");
+
+    const updateOnlineUsers = (onlineUsers) => {
+        if (!onlineList) {
+            return;
+        }
+
+        onlineList.textContent = onlineUsers.length
+            ? onlineUsers.map((onlineUser) => onlineUser.name).join(", ")
+            : "Nobody yet";
+    };
+
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
     const roomSocket = new WebSocket(
         `${protocol}://${window.location.host}/ws/room/${meetingId}/`
@@ -45,6 +57,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
         if (data.kind === "room_message") {
             appendRoomMessage(data);
+        } else if (data.kind === "room_presence") {
+            updateOnlineUsers(data.online_users);
         }
     };
 

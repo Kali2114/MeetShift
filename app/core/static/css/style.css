@@ -860,6 +860,12 @@ textarea {
     resize: none;
 }
 
+.room-online-users {
+    margin: 8px 0 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
 .room-chat-thread {
     max-height: 400px;
     border: 1px solid #e5e7eb;

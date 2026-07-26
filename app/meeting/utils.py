@@ -2,7 +2,7 @@
 Utils for meeting app.
 """
 
-from core.models import Meeting, MeetingParticipant
+from core.models import Meeting, MeetingParticipant, RoomPresence, User
 from django.db.models import Q
 from django.templatetags.static import static
 from django.urls import reverse
@@ -72,6 +72,35 @@ def user_accessible_room_meetings(user):
         Q(organizer=user)
         | Q(participants__user=user, participants__invitation_status="ACC")
     ).distinct()
+
+
+def mark_user_present(room, user):
+    """Record a WebSocket connection for a user in a room."""
+    presence, created = RoomPresence.objects.get_or_create(
+        room=room, user=user, defaults={"connection_count": 1}
+    )
+    if not created:
+        presence.connection_count += 1
+        presence.save(update_fields=["connection_count"])
+
+
+def mark_user_absent(room, user):
+    """Remove one WebSocket connection for a user in a room."""
+    try:
+        presence = RoomPresence.objects.get(room=room, user=user)
+    except RoomPresence.DoesNotExist:
+        return
+
+    if presence.connection_count <= 1:
+        presence.delete()
+    else:
+        presence.connection_count -= 1
+        presence.save(update_fields=["connection_count"])
+
+
+def online_room_users(room):
+    """Return users currently present in a room."""
+    return User.objects.filter(room_presences__room=room).distinct()
 
 
 def user_has_meeting_conflict(user, meeting):
