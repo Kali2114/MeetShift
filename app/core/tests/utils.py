@@ -87,5 +87,22 @@ def create_message(**params):
 
 
 def create_room(**params):
-    """Create and return a new room."""
-    return models.Room.objects.create(**params)
+    """Return the room for a meeting (auto-created by signal), applying any params."""
+    meeting = params.pop("meeting")
+    room, _ = models.Room.objects.get_or_create(meeting=meeting)
+
+    if params:
+        for field, value in params.items():
+            setattr(room, field, value)
+        room.save()
+
+    return room
+
+
+def create_room_message(**params):
+    """Create and return a new room message."""
+    default_message = {
+        "content": "test_message",
+    }
+    default_message.update(**params)
+    return models.RoomMessage.objects.create(**default_message)

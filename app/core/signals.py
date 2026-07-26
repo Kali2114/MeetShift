@@ -6,7 +6,15 @@ import logging
 
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
-from core.models import Message, Notification, User, UserProfile
+from core.models import (
+    Meeting,
+    Message,
+    Notification,
+    Room,
+    RoomMessage,
+    User,
+    UserProfile,
+)
 from django.contrib.auth.signals import (
     user_logged_in,
     user_logged_out,
@@ -25,6 +33,13 @@ def create_user_profile(sender, instance, created, **kwargs):
     """Create user profile after user creation."""
     if created:
         UserProfile.objects.create(user=instance)
+
+
+@receiver(post_save, sender=Meeting)
+def create_room(sender, instance, created, **kwargs):
+    """Create room after meeting creation."""
+    if created:
+        Room.objects.create(meeting=instance)
 
 
 @receiver(user_logged_in)
@@ -160,3 +175,39 @@ def send_message_websocket(sender, instance, created, **kwargs):
         return
 
     transaction.on_commit(lambda: send_message_to_websocket(instance.id))
+
+
+def send_room_message_to_websocket(room_message_id):
+    """Send room message data to the room's WebSocket group."""
+    room_message = RoomMessage.objects.select_related("room", "sender").get(
+        id=room_message_id
+    )
+    group_name = f"room_{room_message.room.meeting_id}"
+
+    logger.info(
+        "Sending room message WebSocket event group=%s",
+        group_name,
+    )
+
+    channel_layer = get_channel_layer()
+
+    async_to_sync(channel_layer.group_send)(
+        group_name,
+        {
+            "type": "room.message",
+            "kind": "room_message",
+            "id": room_message.id,
+            "content": room_message.content,
+            "sender_id": room_message.sender_id,
+            "sender_name": room_message.sender.name,
+        },
+    )
+
+
+@receiver(post_save, sender=RoomMessage)
+def send_room_message_websocket(sender, instance, created, **kwargs):
+    """Send WebSocket event to the room's group after a message is committed."""
+    if not created:
+        return
+
+    transaction.on_commit(lambda: send_room_message_to_websocket(instance.id))

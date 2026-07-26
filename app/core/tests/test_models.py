@@ -401,3 +401,27 @@ class ModelTests(TestCase):
         )
 
         self.assertFalse(room.is_active())
+
+    def test_create_room_message(self):
+        """Test creating room message successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        message = utils.create_room_message(
+            room=room, sender=organizer, content="Hello room!"
+        )
+
+        self.assertEqual(str(message), f"Message from {organizer} in room {room.id}")
+
+    def test_room_messages_ordered_by_created_at(self):
+        """Test room messages are returned in chronological order."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+
+        first = utils.create_room_message(room=room, sender=organizer, content="first")
+        second = utils.create_room_message(
+            room=room, sender=organizer, content="second"
+        )
+
+        self.assertEqual(list(room.messages.all()), [first, second])

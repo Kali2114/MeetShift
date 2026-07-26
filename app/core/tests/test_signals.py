@@ -4,7 +4,7 @@ Tests for user signals.
 
 from unittest.mock import MagicMock, patch
 
-from core.models import Message, Notification, User, UserProfile
+from core.models import Message, Notification, Room, RoomMessage, User, UserProfile
 from core.tests import utils
 from django.contrib.auth.signals import (
     user_logged_in,
@@ -27,6 +27,24 @@ class SignalTests(TestCase):
 
         self.assertTrue(hasattr(user, "user_profile"))
         self.assertEqual(user.user_profile.user, user)
+
+    def test_room_created_after_meeting_creation(self):
+        """Test room is created after meeting creation."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+
+        self.assertTrue(hasattr(meeting, "room"))
+        self.assertEqual(meeting.room.meeting, meeting)
+
+    def test_room_not_duplicated_after_meeting_update(self):
+        """Test room is not duplicated after meeting update."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+
+        meeting.title = "Updated title"
+        meeting.save()
+
+        self.assertEqual(Room.objects.filter(meeting=meeting).count(), 1)
 
     def test_user_profile_not_created_after_user_update(self):
         """Test user profile is not duplicated after user update."""
@@ -343,3 +361,49 @@ class SignalTests(TestCase):
 
         mock_get_channel_layer.assert_not_called()
         mock_async_to_sync.assert_not_called()
+
+    @patch("core.signals.async_to_sync")
+    @patch("core.signals.get_channel_layer")
+    def test_room_message_creation_sends_websocket_event_to_room_group(
+        self,
+        mock_get_channel_layer,
+        mock_async_to_sync,
+    ):
+        """Test created room message sends WebSocket event to the room's group."""
+        channel_layer = MagicMock()
+        group_send = MagicMock()
+
+        mock_get_channel_layer.return_value = channel_layer
+        mock_async_to_sync.return_value = group_send
+
+        organizer = utils.create_user(
+            name="Organizer",
+            email="organizer@example.com",
+        )
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            room_message = RoomMessage.objects.create(
+                room=room,
+                sender=organizer,
+                content="Hello room!",
+            )
+
+        mock_get_channel_layer.assert_called_once_with()
+
+        mock_async_to_sync.assert_called_once_with(
+            channel_layer.group_send,
+        )
+
+        group_send.assert_called_once_with(
+            f"room_{meeting.id}",
+            {
+                "type": "room.message",
+                "kind": "room_message",
+                "id": room_message.id,
+                "content": room_message.content,
+                "sender_id": organizer.id,
+                "sender_name": organizer.name,
+            },
+        )

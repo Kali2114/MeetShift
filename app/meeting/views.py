@@ -4,7 +4,7 @@ Views for meeting app.
 
 import logging
 
-from core.models import Meeting, MeetingParticipant
+from core.models import Meeting, MeetingParticipant, RoomMessage
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -20,9 +20,10 @@ from django.views.generic import (
     UpdateView,
     View,
 )
-from meeting.forms import InviteParticipantForm, MeetingForm
+from meeting.forms import InviteParticipantForm, MeetingForm, RoomMessageForm
 from meeting.utils import (
     meeting_calendar_events,
+    user_accessible_room_meetings,
     user_has_meeting_conflict,
     user_meetings_queryset,
 )
@@ -66,6 +67,19 @@ class MeetingDetailView(LoginRequiredMixin, DetailView):
     def get_queryset(self):
         """Return meeting detail by current user"""
         return user_meetings_queryset(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Attach whether the current user can enter the meeting's room."""
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        context["can_enter_room"] = (
+            self.object.organizer == user
+            or self.object.participants.filter(
+                user=user, invitation_status="ACC"
+            ).exists()
+        )
+
+        return context
 
 
 class CreateMeetingView(LoginRequiredMixin, CreateView):
@@ -237,3 +251,52 @@ class InvitationListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         """Return current user invitations."""
         return MeetingParticipant.objects.filter(user=self.request.user)
+
+
+class RoomDetailView(LoginRequiredMixin, DetailView):
+    """Room detail view."""
+
+    model = Meeting
+    template_name = "meeting/room_detail.html"
+
+    def get_queryset(self):
+        """Return meetings whose room the current user can access."""
+        return user_accessible_room_meetings(self.request.user)
+
+    def get_context_data(self, **kwargs):
+        """Attach the room's message form."""
+        context = super().get_context_data(**kwargs)
+        context["message_form"] = RoomMessageForm()
+
+        return context
+
+
+class SendRoomMessageView(LoginRequiredMixin, View):
+    """Send a message in a meeting's room."""
+
+    def post(self, request, pk):
+        """Create the message if valid and the room is active."""
+        meeting = get_object_or_404(user_accessible_room_meetings(request.user), pk=pk)
+
+        if not meeting.room.is_active():
+            messages.error(request, "This room is not active.")
+            return redirect("meeting:room-detail", pk=meeting.id)
+
+        form = RoomMessageForm(request.POST)
+
+        if form.is_valid():
+            RoomMessage.objects.create(
+                room=meeting.room,
+                sender=request.user,
+                content=form.cleaned_data["content"],
+            )
+
+            logger.info(
+                "Room message sent: meeting_id=%s sender_id=%s",
+                meeting.id,
+                request.user.id,
+            )
+        else:
+            messages.error(request, "Message cannot be empty.")
+
+        return redirect("meeting:room-detail", pk=meeting.id)

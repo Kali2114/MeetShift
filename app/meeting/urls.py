@@ -43,4 +43,14 @@ urlpatterns = [
         views.DeclineInvitationView.as_view(),
         name="decline-invitation",
     ),
+    path(
+        "meetings/<int:pk>/room/",
+        views.RoomDetailView.as_view(),
+        name="room-detail",
+    ),
+    path(
+        "meetings/<int:pk>/room/send/",
+        views.SendRoomMessageView.as_view(),
+        name="room-message-send",
+    ),
 ]

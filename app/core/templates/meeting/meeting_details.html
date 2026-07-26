@@ -13,6 +13,11 @@
         </a>
     </p>
 
+    <p>
+        Starts: {{ meeting.started_at|date:"d M Y H:i" }}<br>
+        Ends: {{ meeting.ended_at|date:"d M Y H:i" }}
+    </p>
+
     <h2>Participants</h2>
 
     <div class="participants-list">
@@ -53,6 +58,12 @@
             <p>No participants invited yet.</p>
         {% endfor %}
     </div>
+
+    {% if can_enter_room %}
+        <div class="meeting-actions">
+            <a href="{% url 'meeting:room-detail' meeting.id %}" class="action-btn room-btn">Enter room</a>
+        </div>
+    {% endif %}
 
     {% if meeting.organizer == user %}
         <div class="meeting-actions">

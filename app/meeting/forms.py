@@ -2,7 +2,7 @@
 Forms for meeting app.
 """
 
-from core.models import Meeting, User
+from core.models import Meeting, RoomMessage, User
 from django import forms
 
 
@@ -51,3 +51,16 @@ class InviteParticipantForm(forms.Form):
         self.fields["users"].queryset = User.objects.exclude(
             id=self.meeting.organizer.id
         ).exclude(meeting_participations__meeting=self.meeting)
+
+
+class RoomMessageForm(forms.ModelForm):
+    """Form for sending a message in a meeting room."""
+
+    class Meta:
+        model = RoomMessage
+        fields = ["content"]
+        widgets = {
+            "content": forms.Textarea(
+                attrs={"rows": 1, "placeholder": "Write a message..."}
+            ),
+        }

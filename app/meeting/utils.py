@@ -66,6 +66,14 @@ def meeting_calendar_events(user, avatar_limit=3):
     return events
 
 
+def user_accessible_room_meetings(user):
+    """Return meetings whose room the user can access."""
+    return Meeting.objects.filter(
+        Q(organizer=user)
+        | Q(participants__user=user, participants__invitation_status="ACC")
+    ).distinct()
+
+
 def user_has_meeting_conflict(user, meeting):
     """Check if user has accepted meeting in the same time."""
     return (
