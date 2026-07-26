@@ -48,27 +48,19 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
-    const roomSocket = new WebSocket(
-        `${protocol}://${window.location.host}/ws/room/${meetingId}/`
-    );
 
-    roomSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-
-        if (data.kind === "room_message") {
-            appendRoomMessage(data);
-        } else if (data.kind === "room_presence") {
-            updateOnlineUsers(data.online_users);
+    connectWithReconnect(
+        () => `${protocol}://${window.location.host}/ws/room/${meetingId}/`,
+        {
+            onMessage: (data) => {
+                if (data.kind === "room_message") {
+                    appendRoomMessage(data);
+                } else if (data.kind === "room_presence") {
+                    updateOnlineUsers(data.online_users);
+                }
+            },
         }
-    };
-
-    roomSocket.onerror = (error) => {
-        console.error("Room WebSocket error:", error);
-    };
-
-    roomSocket.onclose = () => {
-        console.warn("Room WebSocket connection closed.");
-    };
+    );
 
     const messageForm = document.querySelector(".room-chat-form");
     const messageInput = messageForm?.querySelector("textarea");

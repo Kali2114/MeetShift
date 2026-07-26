@@ -59,6 +59,10 @@ All notable changes to this project will be documented in this file.
 - Dark mode: a nav toggle switches themes and remembers the choice, falling
   back to the system's light/dark preference on first visit. Covers the
   full site plus the FullCalendar dashboard view.
+- WebSocket reconnection with exponential backoff for the notification,
+  DM, and room chat sockets, so a dropped connection (network blip, server
+  restart) recovers automatically instead of leaving live updates silently
+  stopped until the page is reloaded.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -76,7 +80,6 @@ All notable changes to this project will be documented in this file.
 #### Frontend
 - Meeting room chat UI polish (currently a basic thread + input, reusing DM
   styling as-is).
-- Better real-time state handling (e.g. WebSocket reconnection/backoff).
 
 #### Infrastructure
 - WebSocket scaling improvements.

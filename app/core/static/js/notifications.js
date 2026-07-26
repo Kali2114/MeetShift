@@ -19,10 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
-    const notificationSocket = new WebSocket(
-        `${protocol}://${window.location.host}/ws/notifications/`
-    );
-
     const removeToast = (toast) => {
         toast.classList.add("notification-toast-removing");
 
@@ -120,44 +116,39 @@ document.addEventListener("DOMContentLoaded", () => {
         conversationsList.prepend(row);
     };
 
-    notificationSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
+    connectWithReconnect(
+        () => `${protocol}://${window.location.host}/ws/notifications/`,
+        {
+            onMessage: (data) => {
+                if (data.kind === "conversation_update") {
+                    console.log("Received conversation update:", data);
+                    handleConversationUpdate(data);
+                    return;
+                }
 
-        if (data.kind === "conversation_update") {
-            console.log("Received conversation update:", data);
-            handleConversationUpdate(data);
-            return;
+                const notificationId = String(data.id);
+                const unreadCount = Number(data.unread_count);
+
+                console.log("Received notification:", data);
+
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0
+                    ? "inline-block"
+                    : "none";
+
+                if (receivedNotificationIds.has(notificationId)) {
+                    console.log(
+                        "Duplicate notification ignored:",
+                        notificationId
+                    );
+                    return;
+                }
+
+                receivedNotificationIds.add(notificationId);
+                showNotificationToast(data);
+            },
         }
-
-        const notificationId = String(data.id);
-        const unreadCount = Number(data.unread_count);
-
-        console.log("Received notification:", data);
-
-        badge.textContent = unreadCount;
-        badge.style.display = unreadCount > 0
-            ? "inline-block"
-            : "none";
-
-        if (receivedNotificationIds.has(notificationId)) {
-            console.log(
-                "Duplicate notification ignored:",
-                notificationId
-            );
-            return;
-        }
-
-        receivedNotificationIds.add(notificationId);
-        showNotificationToast(data);
-    };
-
-    notificationSocket.onerror = (error) => {
-        console.error("Notification WebSocket error:", error);
-    };
-
-    notificationSocket.onclose = () => {
-        console.warn("Notification WebSocket connection closed.");
-    };
+    );
 });
 
 document.addEventListener("DOMContentLoaded", () => {
