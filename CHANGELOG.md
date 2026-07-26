@@ -80,6 +80,12 @@ All notable changes to this project will be documented in this file.
   staying online until both disconnect, and a disconnect/reconnect cycle
   returning cleanly to baseline without leaking presence rows or
   connection metrics.
+- Reviewed WebSocket scaling and long-lived connection reliability: Nginx
+  already proxies `/ws/` correctly (HTTP/1.1 upgrade headers, a 24h
+  read/send timeout, so idle connections aren't killed early) and Redis
+  channel layer config is sound. Further scaling (e.g. multiple Daphne
+  workers) is deferred until there's real traffic data to size it
+  against, rather than guessing at numbers with nothing to validate them.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -91,12 +97,6 @@ All notable changes to this project will be documented in this file.
   the rest of the UI instead of rendering as plain links.
 - Message input field no longer capped at 500px width, out of alignment
   with the rest of the chat box.
-
-### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
-
-#### Infrastructure
-- WebSocket scaling improvements.
-- Performance and reliability improvements for long-lived WebSocket connections.
 
 ---
 
