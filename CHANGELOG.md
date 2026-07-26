@@ -43,6 +43,7 @@ All notable changes to this project will be documented in this file.
   connection itself.
 - Meeting detail page shows the schedule (start/end time) and an "Enter
   room" link.
+- Online/offline presence tracking for room participants.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -52,6 +53,8 @@ All notable changes to this project will be documented in this file.
 - User emails are validated for format, not just presence.
 - Meeting detail page action buttons (Invite/Edit/Delete) restyled to match
   the rest of the UI instead of rendering as plain links.
+- Message input field no longer capped at 500px width, out of alignment
+  with the rest of the chat box.
 
 ### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
 
@@ -61,8 +64,6 @@ All notable changes to this project will be documented in this file.
 - Conversation header avatar (currently sidebar-only).
 
 #### Meeting rooms
-- Presence tracking for meeting participants.
-- Online and offline participant status.
 - Unread room message counters.
 - Notifications for new room activity.
 
