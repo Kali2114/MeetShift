@@ -71,6 +71,10 @@ All notable changes to this project will be documented in this file.
 - Channels' Redis channel layer now uses its own Redis DB index (1),
   separate from Celery's broker/result backend (DB 0), which had been
   implicitly sharing DB 0 with no explicit index set.
+- Prometheus metrics and Grafana panels for WebSocket connections: active
+  connections and connect/disconnect rates, broken down by consumer
+  (notifications vs. room chat) — previously invisible, since
+  django-prometheus only instruments regular HTTP traffic.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -87,7 +91,6 @@ All notable changes to this project will be documented in this file.
 
 #### Infrastructure
 - WebSocket scaling improvements.
-- Additional monitoring for chat and room connections.
 - Additional tests for real-time communication.
 - Performance and reliability improvements for long-lived WebSocket connections.
 

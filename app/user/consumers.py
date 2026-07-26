@@ -1,4 +1,11 @@
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from core.metrics import (
+    websocket_connections_active,
+    websocket_connections_total,
+    websocket_disconnections_total,
+)
+
+CONSUMER_LABEL = "notifications"
 
 
 class NotificationConsumer(AsyncJsonWebsocketConsumer):
@@ -21,6 +28,9 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
+        websocket_connections_total.labels(consumer=CONSUMER_LABEL).inc()
+        websocket_connections_active.labels(consumer=CONSUMER_LABEL).inc()
+
     async def disconnect(self, close_code):
         """Remove user connection from notification group."""
         if hasattr(self, "group_name"):
@@ -28,6 +38,8 @@ class NotificationConsumer(AsyncJsonWebsocketConsumer):
                 self.group_name,
                 self.channel_name,
             )
+            websocket_disconnections_total.labels(consumer=CONSUMER_LABEL).inc()
+            websocket_connections_active.labels(consumer=CONSUMER_LABEL).dec()
 
     async def notification_message(self, event):
         """Send notification data to browser."""

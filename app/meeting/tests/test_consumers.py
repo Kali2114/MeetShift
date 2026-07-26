@@ -8,6 +8,11 @@ from asgiref.sync import sync_to_async
 from channels.layers import get_channel_layer
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
+from core.metrics import (
+    websocket_connections_active,
+    websocket_connections_total,
+    websocket_disconnections_total,
+)
 from core.models import RoomPresence
 from core.tests import utils
 from django.contrib.auth.models import AnonymousUser
@@ -113,6 +118,28 @@ class RoomConsumerTests(TransactionTestCase):
         )
 
         self.assertFalse(connected)
+
+    async def test_connect_and_disconnect_update_websocket_metrics(self):
+        """Test connecting/disconnecting updates the WebSocket connection metrics."""
+        active = websocket_connections_active.labels(consumer="room")
+        total = websocket_connections_total.labels(consumer="room")
+        disconnections = websocket_disconnections_total.labels(consumer="room")
+
+        active_before = active._value.get()
+        total_before = total._value.get()
+        disconnections_before = disconnections._value.get()
+
+        communicator, connected = await self.connect(self.organizer)
+        self.assertTrue(connected)
+        await communicator.receive_json_from()  # organizer's own join broadcast
+
+        self.assertEqual(active._value.get(), active_before + 1)
+        self.assertEqual(total._value.get(), total_before + 1)
+
+        await communicator.disconnect()
+
+        self.assertEqual(active._value.get(), active_before)
+        self.assertEqual(disconnections._value.get(), disconnections_before + 1)
 
     async def test_consumer_receives_room_message_event(self):
         """Test room message event is received from the room's channel group."""

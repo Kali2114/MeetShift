@@ -1,6 +1,11 @@
 from channels.layers import get_channel_layer
 from channels.routing import URLRouter
 from channels.testing import WebsocketCommunicator
+from core.metrics import (
+    websocket_connections_active,
+    websocket_connections_total,
+    websocket_disconnections_total,
+)
 from core.tests import utils
 from django.test import TransactionTestCase, override_settings
 from user.routing import websocket_urlpatterns
@@ -93,6 +98,31 @@ class NotificationConsumerTests(TransactionTestCase):
         )
 
         await communicator.disconnect()
+
+    async def test_connect_and_disconnect_update_websocket_metrics(self):
+        """Test connecting/disconnecting updates the WebSocket connection metrics."""
+        active = websocket_connections_active.labels(consumer="notifications")
+        total = websocket_connections_total.labels(consumer="notifications")
+        disconnections = websocket_disconnections_total.labels(consumer="notifications")
+
+        active_before = active._value.get()
+        total_before = total._value.get()
+        disconnections_before = disconnections._value.get()
+
+        application = URLRouter(websocket_urlpatterns)
+        communicator = WebsocketCommunicator(application, "/ws/notifications/")
+        communicator.scope["user"] = self.user
+
+        connected, _ = await communicator.connect()
+        self.assertTrue(connected)
+
+        self.assertEqual(active._value.get(), active_before + 1)
+        self.assertEqual(total._value.get(), total_before + 1)
+
+        await communicator.disconnect()
+
+        self.assertEqual(active._value.get(), active_before)
+        self.assertEqual(disconnections._value.get(), disconnections_before + 1)
 
     async def test_consumer_receives_conversation_update_event(self):
         """Test conversation update event is received from user's channel group."""

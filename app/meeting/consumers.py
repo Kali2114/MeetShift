@@ -4,6 +4,11 @@ Consumers for meeting app.
 
 from channels.db import database_sync_to_async
 from channels.generic.websocket import AsyncJsonWebsocketConsumer
+from core.metrics import (
+    websocket_connections_active,
+    websocket_connections_total,
+    websocket_disconnections_total,
+)
 from core.models import Room
 from meeting.utils import (
     mark_user_absent,
@@ -11,6 +16,8 @@ from meeting.utils import (
     online_room_users,
     user_accessible_room_meetings,
 )
+
+CONSUMER_LABEL = "room"
 
 
 class RoomConsumer(AsyncJsonWebsocketConsumer):
@@ -41,6 +48,9 @@ class RoomConsumer(AsyncJsonWebsocketConsumer):
 
         await self.accept()
 
+        websocket_connections_total.labels(consumer=CONSUMER_LABEL).inc()
+        websocket_connections_active.labels(consumer=CONSUMER_LABEL).inc()
+
         await self.mark_present()
         await self.broadcast_presence()
 
@@ -53,6 +63,8 @@ class RoomConsumer(AsyncJsonWebsocketConsumer):
                 self.group_name,
                 self.channel_name,
             )
+            websocket_disconnections_total.labels(consumer=CONSUMER_LABEL).inc()
+            websocket_connections_active.labels(consumer=CONSUMER_LABEL).dec()
 
     @database_sync_to_async
     def can_access_room(self, user):
