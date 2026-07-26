@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section class="messenger-page">
+<section class="messenger-page messenger-page-detail">
     <div class="messenger-layout">
         <aside class="messenger-sidebar">
             {% include "user/_conversation_sidebar.html" %}
@@ -9,6 +9,7 @@
 
         <div class="messenger-panel">
             <div class="messenger-panel-header">
+                <a href="{% url 'user:conversation-list' %}" class="messenger-back-link">&lsaquo; Back</a>
                 {{ other_user.name }}
             </div>
 

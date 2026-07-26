@@ -30,6 +30,9 @@ All notable changes to this project will be documented in this file.
 - Conversation previews with last message.
 - Conversation ordering by latest activity.
 - Sidebar avatars for conversation participants.
+- Responsive two-column layout: on narrow screens the conversation list and
+  an open thread each take the full width, with a back link to return to
+  the list.
 
 #### Meeting rooms
 - Dedicated room per meeting, auto-created alongside the meeting.
@@ -64,8 +67,6 @@ All notable changes to this project will be documented in this file.
 ### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
 
 #### Messaging polish
-- Responsive messaging layout for small screens (not yet built or verified
-  on mobile).
 - Conversation header avatar (currently sidebar-only).
 
 #### Frontend

@@ -788,8 +788,18 @@ textarea {
 }
 
 .messenger-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     padding: 14px 18px;
     border-bottom: 1px solid #e5e7eb;
+    font-weight: 700;
+}
+
+.messenger-back-link {
+    display: none;
+    color: #2563eb;
+    text-decoration: none;
     font-weight: 700;
 }
 
@@ -858,6 +868,30 @@ textarea {
     padding: 8px 16px;
     border-radius: 20px;
     resize: none;
+}
+
+@media (max-width: 700px) {
+    .messenger-page {
+        height: calc(100vh - 260px);
+        min-height: 360px;
+    }
+
+    .messenger-sidebar {
+        width: 100%;
+    }
+
+    .messenger-back-link {
+        display: inline-block;
+    }
+
+    .messenger-page-list .messenger-panel,
+    .messenger-page-detail .messenger-sidebar {
+        display: none;
+    }
+
+    .message-item {
+        max-width: 85%;
+    }
 }
 
 .room-online-users {
