@@ -1,3 +1,15 @@
+const SENDER_COLOR_PALETTE = [
+    "#2563eb",
+    "#e11d48",
+    "#7c3aed",
+    "#0891b2",
+    "#059669",
+    "#db2777",
+];
+
+const senderColor = (senderId) =>
+    SENDER_COLOR_PALETTE[senderId % SENDER_COLOR_PALETTE.length];
+
 document.addEventListener("DOMContentLoaded", () => {
     const threadContainer = document.querySelector(
         ".messages-thread[data-meeting-id]"
@@ -21,6 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const item = document.createElement("div");
         item.classList.add("message-item", "message-item-received");
         item.dataset.messageId = messageId;
+        item.style.setProperty("--sender-color", senderColor(data.sender_id));
 
         const sender = document.createElement("p");
         sender.classList.add("message-sender");

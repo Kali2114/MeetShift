@@ -12,7 +12,7 @@ from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
-from meeting.utils import room_unread_count
+from meeting.utils import room_unread_count, sender_color
 
 INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
@@ -719,6 +719,21 @@ class PrivateMeetingViewsTests(TestCase):
         res = self.client.get(get_room_detail_url(meeting.id))
 
         self.assertContains(res, "Hello room!")
+
+    def test_room_detail_shows_sender_color_for_messages(self):
+        """Test each room message carries its sender's deterministic color."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_message(
+            room=meeting.room, sender=self.user, content="Hello room!"
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, f"--sender-color: {sender_color(self.user.id)};")
 
     def test_room_detail_shows_send_form_when_active(self):
         """Test room detail page shows the send-message form when active."""

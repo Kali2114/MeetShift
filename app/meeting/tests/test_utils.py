@@ -10,6 +10,7 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import (
+    SENDER_COLOR_PALETTE,
     mark_room_read,
     mark_user_absent,
     mark_user_present,
@@ -17,6 +18,7 @@ from meeting.utils import (
     online_room_users,
     room_notification_recipients,
     room_unread_count,
+    sender_color,
 )
 
 
@@ -267,6 +269,22 @@ class RoomUnreadCountTests(TestCase):
         mark_room_read(meeting.room, organizer)
 
         self.assertEqual(room_unread_count(meeting.room, organizer), 0)
+
+
+class SenderColorTests(TestCase):
+    """Tests for the deterministic per-sender room chat color."""
+
+    def test_sender_color_is_deterministic(self):
+        """Test the same user id always returns the same color."""
+        self.assertEqual(sender_color(7), sender_color(7))
+
+    def test_sender_color_is_from_the_palette(self):
+        """Test the returned color is always one of the palette entries."""
+        self.assertIn(sender_color(42), SENDER_COLOR_PALETTE)
+
+    def test_sender_color_differs_for_different_ids(self):
+        """Test consecutive user ids get different colors from the palette."""
+        self.assertNotEqual(sender_color(1), sender_color(2))
 
 
 class RoomNotificationRecipientsTests(TestCase):

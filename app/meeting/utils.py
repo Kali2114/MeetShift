@@ -129,6 +129,21 @@ def mark_room_read(room, user):
     )
 
 
+SENDER_COLOR_PALETTE = [
+    "#2563eb",  # blue
+    "#e11d48",  # rose
+    "#7c3aed",  # violet
+    "#0891b2",  # cyan
+    "#059669",  # emerald
+    "#db2777",  # pink
+]
+
+
+def sender_color(user_id):
+    """Return a deterministic room chat display color for a user id."""
+    return SENDER_COLOR_PALETTE[user_id % len(SENDER_COLOR_PALETTE)]
+
+
 def room_notification_recipients(meeting, sender):
     """Return users who can access the meeting's room, excluding the sender."""
     recipients = {

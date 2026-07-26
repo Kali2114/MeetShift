@@ -1,5 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
+{% load meeting_extras %}
 
 {% block content %}
 <div class="meeting-detail-card">
@@ -23,6 +24,7 @@
                 <div
                     class="message-item {% if message.sender == user %}message-item-sent{% else %}message-item-received{% endif %}"
                     data-message-id="{{ message.id }}"
+                    style="--sender-color: {{ message.sender_id|sender_color }};"
                 >
                     <p class="message-sender">{{ message.sender.name }}</p>
                     <p class="message-content">{{ message.content }}</p>

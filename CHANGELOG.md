@@ -63,6 +63,9 @@ All notable changes to this project will be documented in this file.
   DM, and room chat sockets, so a dropped connection (network blip, server
   restart) recovers automatically instead of leaving live updates silently
   stopped until the page is reloaded.
+- Meeting room chat now gives each participant a deterministic display
+  color for their name, so a multi-person conversation is easier to
+  follow at a glance (not needed for DMs, which are always 1:1).
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -76,10 +79,6 @@ All notable changes to this project will be documented in this file.
   with the rest of the chat box.
 
 ### Planned for v2.0.0 — Real-Time Communication & Meeting Rooms
-
-#### Frontend
-- Meeting room chat UI polish (currently a basic thread + input, reusing DM
-  styling as-is).
 
 #### Infrastructure
 - WebSocket scaling improvements.
