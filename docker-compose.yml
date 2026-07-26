@@ -28,7 +28,8 @@ services:
       - EMAIL_USE_TLS=${EMAIL_USE_TLS}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
       - GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,app}
     depends_on:
       - db
@@ -70,7 +71,8 @@ services:
       - EMAIL_USE_TLS=${EMAIL_USE_TLS}
       - DEFAULT_FROM_EMAIL=${DEFAULT_FROM_EMAIL}
       - GITHUB_ACTIONS=${GITHUB_ACTIONS:-false}
-      - DJANGO_SECRET_KEY=${DJANGO_SECRET_KEY}
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY}
       - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,app}
     depends_on:
       - redis

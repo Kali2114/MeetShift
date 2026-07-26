@@ -60,6 +60,32 @@ class MeetingFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
 
+    def test_meeting_form_requires_started_at(self):
+        """Test form is invalid when started_at is missing."""
+        form = MeetingForm(
+            data={
+                "title": "Test meeting",
+                "description": "Test description",
+                "ended_at": timezone.now() + timedelta(hours=1),
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("started_at", form.errors)
+
+    def test_meeting_form_requires_ended_at(self):
+        """Test form is invalid when ended_at is missing."""
+        form = MeetingForm(
+            data={
+                "title": "Test meeting",
+                "description": "Test description",
+                "started_at": timezone.now(),
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("ended_at", form.errors)
+
 
 class InviteParticipantFormTests(TestCase):
     """Test invite participant form."""

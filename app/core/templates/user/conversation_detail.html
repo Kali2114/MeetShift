@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block content %}
+<section class="messenger-page messenger-page-detail">
+    <div class="messenger-layout">
+        <aside class="messenger-sidebar">
+            {% include "user/_conversation_sidebar.html" %}
+        </aside>
+
+        <div class="messenger-panel">
+            <div class="messenger-panel-header">
+                <a href="{% url 'user:conversation-list' %}" class="messenger-back-link">&lsaquo; Back</a>
+                <img
+                    class="conversation-avatar"
+                    src="{% if other_user.user_profile.avatar %}{{ other_user.user_profile.avatar.url }}{% else %}{% static 'img/no-avatar.jpg' %}{% endif %}"
+                    alt=""
+                >
+                {{ other_user.name }}
+            </div>
+
+            <div class="messages-thread" data-conversation-id="{{ conversation.id }}">
+                {% for message in conversation.messages.all %}
+                    <div
+                        class="message-item {% if message.sender == user %}message-item-sent{% else %}message-item-received{% endif %}"
+                        data-message-id="{{ message.id }}"
+                    >
+                        <p class="message-content">{{ message.content }}</p>
+                        <p class="message-date">{{ message.created_at|date:"d M Y H:i" }}</p>
+                    </div>
+                {% empty %}
+                    <p class="messenger-empty-hint">No messages yet. Say hello!</p>
+                {% endfor %}
+            </div>
+
+            <form
+                action="{% url 'user:message-send' conversation.id %}"
+                method="post"
+                class="message-form"
+            >
+                {% csrf_token %}
+                {{ message_form.content }}
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+</section>
+{% endblock %}

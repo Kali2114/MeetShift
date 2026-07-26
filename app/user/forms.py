@@ -2,9 +2,10 @@
 Forms for user app.
 """
 
-from core.models import User, UserProfile
+from core.models import Message, User, UserProfile
 from django import forms
 from django.contrib.auth.forms import AuthenticationForm
+from django.contrib.auth.password_validation import validate_password
 
 
 class UserRegisterForm(forms.ModelForm):
@@ -18,13 +19,23 @@ class UserRegisterForm(forms.ModelForm):
         fields = ["name", "email", "password"]
 
     def clean(self):
-        """Validate passwords match."""
+        """Validate passwords match and meet strength requirements."""
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         password_confirm = cleaned_data.get("password_confirm")
 
         if password and password_confirm and password != password_confirm:
             raise forms.ValidationError("Passwords don't match")
+
+        if password:
+            temp_user = User(
+                email=cleaned_data.get("email"),
+                name=cleaned_data.get("name"),
+            )
+            try:
+                validate_password(password, user=temp_user)
+            except forms.ValidationError as error:
+                self.add_error("password", error)
 
         return cleaned_data
 
@@ -85,3 +96,16 @@ class UserAuthenticationForm(AuthenticationForm):
                 raise forms.ValidationError(self.inactive_error)
 
         return super().clean()
+
+
+class MessageForm(forms.ModelForm):
+    """Form for sending a message."""
+
+    class Meta:
+        model = Message
+        fields = ["content"]
+        widgets = {
+            "content": forms.Textarea(
+                attrs={"rows": 1, "placeholder": "Write a message..."}
+            ),
+        }

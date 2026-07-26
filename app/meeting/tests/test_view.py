@@ -6,12 +6,13 @@ from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
 
-from core.models import Meeting, Notification
+from core.models import Meeting, Notification, RoomMessage
 from core.tests import utils
 from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from meeting.utils import room_unread_count, sender_color
 
 INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
@@ -37,6 +38,16 @@ def get_meeting_delete_url(meeting_id):
 def get_meeting_invite_url(meeting_id):
     """Return meeting invite url."""
     return reverse("meeting:invite-participant", args=[meeting_id])
+
+
+def get_room_detail_url(meeting_id):
+    """Return room detail url."""
+    return reverse("meeting:room-detail", args=[meeting_id])
+
+
+def get_room_message_send_url(meeting_id):
+    """Return room message send url."""
+    return reverse("meeting:room-message-send", args=[meeting_id])
 
 
 def get_accept_invitation_url(invitation_id):
@@ -164,6 +175,19 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertTemplateUsed(res, "meeting/meeting_details.html")
         self.assertEqual(res.context["meeting"], meeting)
 
+    def test_meeting_detail_shows_start_and_end_time(self):
+        """Test meeting detail page shows the start and end time."""
+        meeting = utils.create_meeting(organizer=self.user)
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertContains(
+            res, timezone.localtime(meeting.started_at).strftime("%d %b %Y %H:%M")
+        )
+        self.assertContains(
+            res, timezone.localtime(meeting.ended_at).strftime("%d %b %Y %H:%M")
+        )
+
     def test_participant_can_view_meeting_detail(self):
         """Test participant can view meeting detail."""
         meeting = utils.create_meeting(organizer=self.organizer)
@@ -177,6 +201,39 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertEqual(res.context["meeting"], meeting)
+
+    def test_organizer_can_enter_room(self):
+        """Test organizer sees the enter-room link."""
+        meeting = utils.create_meeting(organizer=self.user)
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertTrue(res.context["can_enter_room"])
+        self.assertContains(res, get_room_detail_url(meeting.id))
+
+    def test_accepted_participant_can_enter_room(self):
+        """Test an accepted participant sees the enter-room link."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertTrue(res.context["can_enter_room"])
+        self.assertContains(res, get_room_detail_url(meeting.id))
+
+    def test_pending_participant_cannot_enter_room(self):
+        """Test a pending participant does not see the enter-room link."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="PND"
+        )
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertFalse(res.context["can_enter_room"])
+        self.assertNotContains(res, get_room_detail_url(meeting.id))
 
     def test_other_user_cannot_view_meeting_detail(self):
         """Test user cannot view meeting they do not participate in."""
@@ -199,9 +256,12 @@ class PrivateMeetingViewsTests(TestCase):
 
     def test_create_view(self):
         """Test create view successful."""
+        started_at = timezone.now()
         payload = {
             "title": "test_title",
             "description": "test_description",
+            "started_at": started_at,
+            "ended_at": started_at + timedelta(hours=1),
         }
         res = self.client.post(MEETING_CREATE_URL, payload)
 
@@ -217,6 +277,8 @@ class PrivateMeetingViewsTests(TestCase):
         payload = {
             "title": "new_title",
             "description": "new_description",
+            "started_at": meeting.started_at,
+            "ended_at": meeting.ended_at,
         }
         res = self.client.post(get_meeting_edit_url(meeting.id), payload)
         meeting.refresh_from_db()
@@ -566,3 +628,331 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(mock_send_email_task.call_count, 2)
+
+    def test_room_detail_requires_login(self):
+        """Test room detail page requires login."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        self.client.logout()
+        room_url = get_room_detail_url(meeting.id)
+
+        res = self.client.get(room_url)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(res, f"{reverse('login')}?next={room_url}")
+
+    def test_room_detail_denies_non_participant(self):
+        """Test room detail page 404s for a user with no relation to the meeting."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_room_detail_denies_pending_participant(self):
+        """Test room detail page 404s for a pending participant."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="PND"
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_room_detail_denies_declined_participant(self):
+        """Test room detail page 404s for a declined participant."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="DEC"
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_room_detail_allows_organizer(self):
+        """Test room detail page is visible to the organizer."""
+        meeting = utils.create_meeting(organizer=self.user)
+        utils.create_room(meeting=meeting)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "meeting/room_detail.html")
+
+    def test_room_detail_allows_accepted_participant(self):
+        """Test room detail page is visible to an accepted participant."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+        utils.create_room(meeting=meeting)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+
+    def test_room_detail_shows_active_state(self):
+        """Test room detail page shows the room is active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room(meeting=meeting)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, "Room is active")
+
+    def test_room_detail_shows_existing_messages_when_active(self):
+        """Test room detail page shows existing messages when active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_message(
+            room=meeting.room, sender=self.user, content="Hello room!"
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, "Hello room!")
+
+    def test_room_detail_shows_sender_color_for_messages(self):
+        """Test each room message carries its sender's deterministic color."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_message(
+            room=meeting.room, sender=self.user, content="Hello room!"
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, f"--sender-color: {sender_color(self.user.id)};")
+
+    def test_room_detail_shows_send_form_when_active(self):
+        """Test room detail page shows the send-message form when active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, get_room_message_send_url(meeting.id))
+
+    def test_room_detail_includes_online_users(self):
+        """Test room detail page context includes currently online users."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_presence(room=meeting.room, user=self.user)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertIn(self.user, res.context["online_users"])
+
+    def test_room_detail_shows_inactive_state(self):
+        """Test room detail page shows the room is not active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() + timedelta(hours=2),
+            ended_at=timezone.now() + timedelta(hours=3),
+        )
+        utils.create_room(meeting=meeting)
+
+        res = self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertContains(res, "not open yet")
+
+    def test_send_room_message_requires_login(self):
+        """Test sending a room message requires login."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        self.client.logout()
+
+        res = self.client.post(get_room_message_send_url(meeting.id), {"content": "hi"})
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(res.url.startswith(reverse("login")))
+
+    def test_send_room_message_denies_non_participant(self):
+        """Test sending a room message fails for a non-participant."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+
+        res = self.client.post(get_room_message_send_url(meeting.id), {"content": "hi"})
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(RoomMessage.objects.exists())
+
+    def test_send_room_message_denies_pending_participant(self):
+        """Test sending a room message fails for a pending participant."""
+        meeting = utils.create_meeting(organizer=self.organizer)
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="PND"
+        )
+
+        res = self.client.post(get_room_message_send_url(meeting.id), {"content": "hi"})
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(RoomMessage.objects.exists())
+
+    def test_send_room_message_rejects_when_room_inactive(self):
+        """Test sending a room message fails while the room is not active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() + timedelta(hours=2),
+            ended_at=timezone.now() + timedelta(hours=3),
+        )
+
+        res = self.client.post(get_room_message_send_url(meeting.id), {"content": "hi"})
+
+        self.assertRedirects(res, get_room_detail_url(meeting.id))
+        self.assertFalse(RoomMessage.objects.exists())
+
+    def test_send_room_message_creates_message_when_active(self):
+        """Test sending a room message creates it when the room is active."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+
+        res = self.client.post(
+            get_room_message_send_url(meeting.id), {"content": "Hello room!"}
+        )
+
+        self.assertRedirects(res, get_room_detail_url(meeting.id))
+        self.assertTrue(
+            RoomMessage.objects.filter(
+                room=meeting.room, sender=self.user, content="Hello room!"
+            ).exists()
+        )
+
+    def test_send_room_message_rejects_empty_content(self):
+        """Test sending an empty room message does not create it."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+
+        self.client.post(get_room_message_send_url(meeting.id), {"content": ""})
+
+        self.assertFalse(RoomMessage.objects.exists())
+
+    def test_send_room_message_notifies_other_room_members(self):
+        """Test sending a room message notifies the organizer and other participants."""
+        meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+        other_participant = utils.create_user(email="other@example.com", name="other")
+        utils.create_meeting_participant(
+            meeting=meeting, user=other_participant, invitation_status="ACC"
+        )
+        pending_participant = utils.create_user(
+            email="pending2@example.com", name="pending2"
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=pending_participant, invitation_status="PND"
+        )
+
+        self.client.post(get_room_message_send_url(meeting.id), {"content": "Hello!"})
+
+        self.assertTrue(
+            Notification.objects.filter(user=self.organizer, meeting=meeting).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=other_participant, meeting=meeting
+            ).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(
+                user=pending_participant, meeting=meeting
+            ).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(user=self.user, meeting=meeting).exists()
+        )
+
+    def test_send_room_message_does_not_notify_when_form_invalid(self):
+        """Test an empty room message does not create any notifications."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.organizer, invitation_status="ACC"
+        )
+
+        self.client.post(get_room_message_send_url(meeting.id), {"content": ""})
+
+        self.assertFalse(Notification.objects.exists())
+
+    def test_room_detail_marks_room_read_when_active(self):
+        """Test visiting an active room marks its messages as read."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(room_unread_count(meeting.room, self.user), 0)
+
+    def test_room_detail_does_not_mark_read_when_inactive(self):
+        """Test visiting an inactive room does not mark its messages as read."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() + timedelta(hours=2),
+            ended_at=timezone.now() + timedelta(hours=3),
+        )
+        room = utils.create_room(meeting=meeting)
+        utils.create_room_message(room=room, sender=self.organizer, content="hi")
+
+        self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(room_unread_count(room, self.user), 1)
+
+    def test_meeting_detail_includes_room_unread_count(self):
+        """Test meeting detail context includes the room's unread message count."""
+        meeting = utils.create_meeting(organizer=self.user)
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertEqual(res.context["room_unread_count"], 1)
+        self.assertContains(res, '<span class="notification-badge">1</span>')
+
+    def test_meeting_list_includes_room_unread_count(self):
+        """Test meeting list annotates each meeting with its room unread count."""
+        meeting = utils.create_meeting(organizer=self.user)
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        res = self.client.get(MEETING_LIST_URL)
+
+        listed_meeting = res.context["meetings"][0]
+        self.assertEqual(listed_meeting.room_unread_count, 1)
+        self.assertContains(res, '<span class="notification-badge">1</span>')

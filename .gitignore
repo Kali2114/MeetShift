@@ -226,3 +226,5 @@ terraform/terraform.tfvars
 terraform/crash.log
 
 *.deb
+
+.claude

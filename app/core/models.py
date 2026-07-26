@@ -4,6 +4,7 @@ Database models.
 
 import os
 import uuid
+from datetime import timedelta
 
 from core import enums
 from core.utils import check_email_and_name
@@ -31,9 +32,8 @@ class UserManager(BaseUserManager):
 
     def create_user(self, email, name, password=None, **kwargs):
         """Create, save and return a new user."""
-        check_email_and_name(email, name)
-
         normalized_email = self.normalize_email(email).strip().lower()
+        check_email_and_name(normalized_email, name)
 
         user = self.model(
             email=normalized_email,
@@ -47,9 +47,8 @@ class UserManager(BaseUserManager):
 
     def create_superuser(self, email, name, password=None, **kwargs):
         """Create, save and return a new superuser."""
-        check_email_and_name(email, name)
-
         normalized_email = self.normalize_email(email).strip().lower()
+        check_email_and_name(normalized_email, name)
 
         user = self.model(
             email=normalized_email,
@@ -104,8 +103,8 @@ class Meeting(models.Model):
         "User", on_delete=models.CASCADE, related_name="organized_meetings"
     )
     status = models.CharField(max_length=3, choices=enums.STATUS_CHOICES, default="DRF")
-    started_at = models.DateTimeField(blank=True, null=True)
-    ended_at = models.DateTimeField(blank=True, null=True)
+    started_at = models.DateTimeField()
+    ended_at = models.DateTimeField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -202,9 +201,167 @@ class Notification(models.Model):
         blank=True,
         null=True,
     )
+    conversation = models.ForeignKey(
+        "Conversation",
+        on_delete=models.CASCADE,
+        related_name="notifications",
+        blank=True,
+        null=True,
+    )
     message = models.CharField(max_length=255)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return f"{self.message} to {self.user.name}"
+
+
+class ConversationManager(models.Manager):
+    """Manager for conversations."""
+
+    def get_or_create_between(self, user_a, user_b):
+        """Return the conversation between two users, creating it in canonical order."""
+        user1, user2 = sorted([user_a, user_b], key=lambda u: u.pk)
+        return self.get_or_create(user1=user1, user2=user2)
+
+
+class Conversation(models.Model):
+    """Model for conversation object."""
+
+    user1 = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="conversations_user1"
+    )
+    user2 = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="conversations_user2"
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = ConversationManager()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user1", "user2"], name="unique_conversation_pair"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(user1_id__lt=models.F("user2_id")),
+                name="conversation_user1_lt_user2",
+            ),
+        ]
+
+    def __str__(self):
+        return f"Conversation between {self.user1} and {self.user2}"
+
+    def other_participant(self, user):
+        """Return the participant that is not the given user."""
+        return self.user2 if self.user1_id == user.id else self.user1
+
+
+class Message(models.Model):
+    """Model for message object."""
+
+    conversation = models.ForeignKey(
+        "Conversation", on_delete=models.CASCADE, related_name="messages"
+    )
+    sender = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="sent_messages"
+    )
+    content = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Message from {self.sender} in conversation {self.conversation_id}"
+
+
+class Room(models.Model):
+    """Model for room object."""
+
+    meeting = models.OneToOneField(
+        "Meeting",
+        on_delete=models.CASCADE,
+        related_name="room",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Room for {self.meeting} meeting."
+
+    def is_active(self):
+        """Return true if room is active."""
+        now = timezone.now()
+        activation_time = self.meeting.started_at - timedelta(minutes=10)
+
+        if now < activation_time:
+            return False
+
+        natural_closing_time = self.meeting.ended_at + timedelta(minutes=10)
+
+        closing_times = [natural_closing_time]
+        if self.ended_at is not None:
+            closing_times.append(self.ended_at)
+
+        return now <= min(closing_times)
+
+
+class RoomMessage(models.Model):
+    """Model for a chat message inside a meeting room."""
+
+    room = models.ForeignKey("Room", on_delete=models.CASCADE, related_name="messages")
+    sender = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="sent_room_messages"
+    )
+    content = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at"]
+
+    def __str__(self):
+        return f"Message from {self.sender} in room {self.room_id}"
+
+
+class RoomPresence(models.Model):
+    """Model tracking a user's active WebSocket connections to a room."""
+
+    room = models.ForeignKey("Room", on_delete=models.CASCADE, related_name="presences")
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="room_presences"
+    )
+    connection_count = models.PositiveIntegerField(default=1)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "user"], name="unique_room_presence"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} present in {self.room}"
+
+
+class RoomReadState(models.Model):
+    """Model tracking when a user last read a room's messages."""
+
+    room = models.ForeignKey(
+        "Room", on_delete=models.CASCADE, related_name="read_states"
+    )
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="room_read_states"
+    )
+    last_read_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "user"], name="unique_room_read_state"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} read {self.room} up to {self.last_read_at}"

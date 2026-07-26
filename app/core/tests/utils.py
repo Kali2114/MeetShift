@@ -31,8 +31,11 @@ def create_test_image():
 
 def create_meeting(**params):
     """Create and return a new meeting."""
+    started_at = timezone.now()
     default_meeting = {
         "title": "test_title",
+        "started_at": started_at,
+        "ended_at": started_at + timedelta(hours=1),
     }
     default_meeting.update(**params)
     return models.Meeting.objects.create(**default_meeting)
@@ -66,3 +69,50 @@ def create_notification(**params):
     }
     default_notification.update(**params)
     return models.Notification.objects.create(**default_notification)
+
+
+def create_conversation(user1, user2):
+    """Create and return a new conversation between two users."""
+    conversation, _ = models.Conversation.objects.get_or_create_between(user1, user2)
+    return conversation
+
+
+def create_message(**params):
+    """Create and return a new message."""
+    default_message = {
+        "content": "test_message",
+    }
+    default_message.update(**params)
+    return models.Message.objects.create(**default_message)
+
+
+def create_room(**params):
+    """Return the room for a meeting (auto-created by signal), applying any params."""
+    meeting = params.pop("meeting")
+    room, _ = models.Room.objects.get_or_create(meeting=meeting)
+
+    if params:
+        for field, value in params.items():
+            setattr(room, field, value)
+        room.save()
+
+    return room
+
+
+def create_room_message(**params):
+    """Create and return a new room message."""
+    default_message = {
+        "content": "test_message",
+    }
+    default_message.update(**params)
+    return models.RoomMessage.objects.create(**default_message)
+
+
+def create_room_presence(**params):
+    """Create and return a new room presence."""
+    return models.RoomPresence.objects.create(**params)
+
+
+def create_room_read_state(**params):
+    """Create and return a new room read state."""
+    return models.RoomReadState.objects.create(**params)

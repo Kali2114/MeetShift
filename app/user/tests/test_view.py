@@ -6,7 +6,7 @@ import tempfile
 from http import HTTPStatus
 from unittest.mock import patch
 
-from core.models import User
+from core.models import Conversation, Message, Notification, User
 from core.tests import utils
 from django.contrib.auth.tokens import default_token_generator
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -504,6 +504,26 @@ class PrivateUserViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
         self.assertFalse(notification.is_read)
 
+    def test_user_can_read_message_notification(self):
+        """Test reading a message notification redirects to the conversation."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+        notification = utils.create_notification(
+            user=self.user,
+            conversation=conversation,
+            message="New message from other.",
+        )
+
+        res = self.client.get(get_notification_read_url(notification.id))
+        notification.refresh_from_db()
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(notification.is_read)
+        self.assertRedirects(
+            res,
+            reverse("user:conversation-detail", args=[conversation.id]),
+        )
+
     def test_user_can_see_own_notification(self):
         """Test user can see own notifications successfully."""
         organizer = utils.create_user(
@@ -536,3 +556,365 @@ class PrivateUserViewsTests(TestCase):
 
         self.assertEqual(res.status_code, HTTPStatus.OK)
         self.assertNotContains(res, notification.message)
+
+    def test_conversation_list_requires_login(self):
+        """Test conversation list page requires login."""
+        self.client.logout()
+        conversation_list_url = reverse("user:conversation-list")
+
+        res = self.client.get(conversation_list_url)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(res, f"{reverse('login')}?next={conversation_list_url}")
+
+    def test_conversation_list_page_displayed(self):
+        """Test conversation list page is displayed."""
+        conversation_list_url = reverse("user:conversation-list")
+
+        res = self.client.get(conversation_list_url)
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/conversation_list.html")
+
+    def test_conversation_list_shows_only_own_conversations(self):
+        """Test conversation list shows only conversations current user is part of."""
+        other_user1 = utils.create_user(name="other1", email="other1@example.com")
+        other_user2 = utils.create_user(name="other2", email="other2@example.com")
+        own_conversation = utils.create_conversation(self.user, other_user1)
+        utils.create_conversation(other_user1, other_user2)
+
+        res = self.client.get(reverse("user:conversation-list"))
+
+        self.assertEqual(
+            list(res.context["conversations"]),
+            [own_conversation],
+        )
+
+    def test_conversation_list_orders_by_latest_activity(self):
+        """Test conversation list is ordered by most recent message first."""
+        other_user1 = utils.create_user(name="other1", email="other1@example.com")
+        other_user2 = utils.create_user(name="other2", email="other2@example.com")
+        older_conversation = utils.create_conversation(self.user, other_user1)
+        newer_conversation = utils.create_conversation(self.user, other_user2)
+
+        utils.create_message(
+            conversation=older_conversation, sender=self.user, content="hi"
+        )
+        utils.create_message(
+            conversation=newer_conversation, sender=self.user, content="hey"
+        )
+
+        res = self.client.get(reverse("user:conversation-list"))
+
+        self.assertEqual(
+            list(res.context["conversations"]),
+            [newer_conversation, older_conversation],
+        )
+
+    def test_conversation_list_shows_unread_count(self):
+        """Test conversation list annotates unread message count per conversation."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        utils.create_message(
+            conversation=conversation, sender=other_user, content="unread 1"
+        )
+        utils.create_message(
+            conversation=conversation, sender=other_user, content="unread 2"
+        )
+        utils.create_message(
+            conversation=conversation,
+            sender=self.user,
+            content="own message, not counted",
+        )
+
+        res = self.client.get(reverse("user:conversation-list"))
+
+        self.assertEqual(res.context["conversations"][0].unread_count, 2)
+
+    def test_conversation_detail_requires_login(self):
+        """Test conversation detail page requires login."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+        self.client.logout()
+        detail_url = reverse("user:conversation-detail", args=[conversation.id])
+
+        res = self.client.get(detail_url)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(res, f"{reverse('login')}?next={detail_url}")
+
+    def test_conversation_detail_shows_messages(self):
+        """Test conversation detail page shows the conversation's messages."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+        utils.create_message(
+            conversation=conversation, sender=other_user, content="Hello there!"
+        )
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/conversation_detail.html")
+        self.assertContains(res, "Hello there!")
+
+    def test_conversation_detail_shows_default_avatar_for_other_user(self):
+        """Test conversation header shows the default avatar when none is set."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertContains(res, "no-avatar")
+
+    def test_conversation_detail_shows_uploaded_avatar_for_other_user(self):
+        """Test conversation header shows the other user's uploaded avatar."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        other_user.user_profile.avatar = utils.create_test_image()
+        other_user.user_profile.save()
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertContains(res, other_user.user_profile.avatar.url)
+
+    def test_conversation_detail_includes_conversations_sidebar_context(self):
+        """Test conversation detail page context includes the sidebar list."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        other_conversation = utils.create_conversation(self.user, other_user)
+        third_user = utils.create_user(name="third", email="third@example.com")
+        another_conversation = utils.create_conversation(self.user, third_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[other_conversation.id])
+        )
+
+        self.assertEqual(
+            set(res.context["conversations"]),
+            {other_conversation, another_conversation},
+        )
+
+    def test_conversation_detail_sidebar_conversations_have_other_user(self):
+        """Test each sidebar conversation has the other participant attached."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        sidebar_conversation = res.context["conversations"][0]
+        self.assertEqual(sidebar_conversation.other_user, other_user)
+
+    def test_conversation_detail_marks_active_conversation(self):
+        """Test the open conversation id is exposed for sidebar highlighting."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertEqual(res.context["active_conversation_id"], conversation.id)
+
+    def test_conversation_detail_denies_non_participant(self):
+        """Test conversation detail page 404s for a non-participant."""
+        other_user1 = utils.create_user(name="other1", email="other1@example.com")
+        other_user2 = utils.create_user(name="other2", email="other2@example.com")
+        conversation = utils.create_conversation(other_user1, other_user2)
+
+        res = self.client.get(
+            reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+
+    def test_conversation_detail_marks_other_users_messages_as_read(self):
+        """Test viewing conversation marks other participant's messages read."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+        incoming = utils.create_message(
+            conversation=conversation, sender=other_user, content="incoming"
+        )
+        own = utils.create_message(
+            conversation=conversation, sender=self.user, content="own"
+        )
+
+        self.client.get(reverse("user:conversation-detail", args=[conversation.id]))
+
+        incoming.refresh_from_db()
+        own.refresh_from_db()
+        self.assertTrue(incoming.is_read)
+        self.assertFalse(own.is_read)
+
+    def test_send_message_requires_login(self):
+        """Test sending a message requires login."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+        self.client.logout()
+
+        res = self.client.post(
+            reverse("user:message-send", args=[conversation.id]),
+            {"content": "hi"},
+        )
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(res.url.startswith(reverse("login")))
+
+    def test_send_message_creates_message_and_redirects(self):
+        """Test sending a message creates it and redirects to the thread."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        res = self.client.post(
+            reverse("user:message-send", args=[conversation.id]),
+            {"content": "Hello!"},
+        )
+
+        self.assertRedirects(
+            res, reverse("user:conversation-detail", args=[conversation.id])
+        )
+        self.assertTrue(
+            Message.objects.filter(
+                conversation=conversation, sender=self.user, content="Hello!"
+            ).exists()
+        )
+
+    def test_send_message_creates_notification_for_recipient(self):
+        """Test sending a message creates a notification for the recipient."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        self.client.post(
+            reverse("user:message-send", args=[conversation.id]),
+            {"content": "Hello!"},
+        )
+
+        self.assertTrue(
+            Notification.objects.filter(
+                user=other_user,
+                conversation=conversation,
+                meeting=None,
+            ).exists()
+        )
+
+    def test_send_message_denies_non_participant(self):
+        """Test sending a message to a conversation you're not part of fails."""
+        other_user1 = utils.create_user(name="other1", email="other1@example.com")
+        other_user2 = utils.create_user(name="other2", email="other2@example.com")
+        conversation = utils.create_conversation(other_user1, other_user2)
+
+        res = self.client.post(
+            reverse("user:message-send", args=[conversation.id]),
+            {"content": "hi"},
+        )
+
+        self.assertEqual(res.status_code, HTTPStatus.NOT_FOUND)
+        self.assertFalse(Message.objects.filter(conversation=conversation).exists())
+
+    def test_send_message_rejects_empty_content(self):
+        """Test sending an empty message does not create it."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        self.client.post(
+            reverse("user:message-send", args=[conversation.id]),
+            {"content": ""},
+        )
+
+        self.assertFalse(Message.objects.filter(conversation=conversation).exists())
+
+    def test_conversation_start_requires_login(self):
+        """Test starting a conversation requires login."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        self.client.logout()
+
+        res = self.client.get(reverse("user:conversation-start", args=[other_user.id]))
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertTrue(res.url.startswith(reverse("login")))
+
+    def test_conversation_start_creates_conversation_and_redirects(self):
+        """Test starting a conversation creates it and redirects to the thread."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+
+        res = self.client.get(reverse("user:conversation-start", args=[other_user.id]))
+
+        conversation = Conversation.objects.get_or_create_between(
+            self.user, other_user
+        )[0]
+        self.assertRedirects(
+            res, reverse("user:conversation-detail", args=[conversation.id])
+        )
+
+    def test_conversation_start_reuses_existing_conversation(self):
+        """Test starting a conversation twice reuses the same conversation."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        existing = utils.create_conversation(self.user, other_user)
+
+        res = self.client.get(reverse("user:conversation-start", args=[other_user.id]))
+
+        self.assertRedirects(
+            res, reverse("user:conversation-detail", args=[existing.id])
+        )
+        self.assertEqual(Conversation.objects.count(), 1)
+
+    def test_conversation_start_with_self_redirects_to_list(self):
+        """Test starting a conversation with yourself is rejected."""
+        res = self.client.get(reverse("user:conversation-start", args=[self.user.id]))
+
+        self.assertRedirects(res, reverse("user:conversation-list"))
+        self.assertEqual(Conversation.objects.count(), 0)
+
+    def test_new_message_page_requires_login(self):
+        """Test new message page requires login."""
+        self.client.logout()
+        new_message_url = reverse("user:new-message")
+
+        res = self.client.get(new_message_url)
+
+        self.assertEqual(res.status_code, HTTPStatus.FOUND)
+        self.assertRedirects(res, f"{reverse('login')}?next={new_message_url}")
+
+    def test_new_message_page_lists_other_users(self):
+        """Test new message page lists users other than the current user."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+
+        res = self.client.get(reverse("user:new-message"))
+
+        self.assertEqual(res.status_code, HTTPStatus.OK)
+        self.assertTemplateUsed(res, "user/new_message.html")
+        self.assertIn(other_user, res.context["users"])
+        self.assertNotIn(self.user, res.context["users"])
+
+    def test_new_message_page_has_search_input(self):
+        """Test new message page renders a search input for filtering users."""
+        utils.create_user(name="other", email="other@example.com")
+
+        res = self.client.get(reverse("user:new-message"))
+
+        self.assertContains(res, 'id="new-message-search"')
+
+    def test_profile_detail_shows_message_button_for_other_user(self):
+        """Test profile detail page shows a message button for another user."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+
+        res = self.client.get(get_user_detail_url(other_user.id))
+
+        self.assertContains(
+            res, reverse("user:conversation-start", args=[other_user.id])
+        )
+
+    def test_profile_detail_hides_message_button_for_own_profile(self):
+        """Test profile detail page hides message button on your own profile."""
+        res = self.client.get(USER_PROFILE_URL)
+
+        self.assertNotContains(
+            res, reverse("user:conversation-start", args=[self.user.id])
+        )

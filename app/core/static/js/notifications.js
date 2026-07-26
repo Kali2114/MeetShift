@@ -1,5 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
     const badge = document.querySelector("#notification-badge");
+    const messagesBadge = document.querySelector("#messages-badge");
     const toastContainer = document.querySelector(
         "#notification-toast-container"
     );
@@ -18,10 +19,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const protocol = window.location.protocol === "https:" ? "wss" : "ws";
 
-    const notificationSocket = new WebSocket(
-        `${protocol}://${window.location.host}/ws/notifications/`
-    );
-
     const removeToast = (toast) => {
         toast.classList.add("notification-toast-removing");
 
@@ -36,7 +33,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const title = document.createElement("p");
         title.classList.add("notification-toast-title");
-        title.textContent = "New notification";
+        title.textContent = data.conversation_id ? "New message" : "New notification";
 
         const message = document.createElement("p");
         message.classList.add("notification-toast-message");
@@ -54,37 +51,133 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 5000);
     };
 
-    notificationSocket.onmessage = (event) => {
-        const data = JSON.parse(event.data);
-        const notificationId = String(data.id);
-        const unreadCount = Number(data.unread_count);
+    const appendMessageToThread = (threadContainer, data) => {
+        const item = document.createElement("div");
+        item.classList.add("message-item", "message-item-received");
+        item.dataset.messageId = data.id;
 
-        console.log("Received notification:", data);
+        const content = document.createElement("p");
+        content.classList.add("message-content");
+        content.textContent = data.message;
 
-        badge.textContent = unreadCount;
-        badge.style.display = unreadCount > 0
-            ? "inline-block"
-            : "none";
+        item.append(content);
+        threadContainer.appendChild(item);
+        threadContainer.scrollTop = threadContainer.scrollHeight;
+    };
 
-        if (receivedNotificationIds.has(notificationId)) {
-            console.log(
-                "Duplicate notification ignored:",
-                notificationId
-            );
+    const handleConversationUpdate = (data) => {
+        if (messagesBadge) {
+            messagesBadge.textContent = data.total_unread_count;
+            messagesBadge.style.display = data.total_unread_count > 0
+                ? "inline-block"
+                : "none";
+        }
+
+        const threadContainer = document.querySelector(
+            `.messages-thread[data-conversation-id="${data.conversation_id}"]`
+        );
+
+        if (threadContainer) {
+            appendMessageToThread(threadContainer, data);
             return;
         }
 
-        receivedNotificationIds.add(notificationId);
-        showNotificationToast(data);
+        const conversationsList = document.querySelector(
+            ".messenger-conversation-list"
+        );
+
+        if (!conversationsList) {
+            return;
+        }
+
+        const row = conversationsList.querySelector(
+            `[data-conversation-id="${data.conversation_id}"]`
+        );
+
+        if (!row) {
+            window.location.reload();
+            return;
+        }
+
+        let unreadBadge = row.querySelector(".conversation-unread-count");
+
+        if (data.unread_count > 0) {
+            row.classList.add("unread");
+
+            if (!unreadBadge) {
+                unreadBadge = document.createElement("span");
+                unreadBadge.classList.add("conversation-unread-count");
+                row.appendChild(unreadBadge);
+            }
+
+            unreadBadge.textContent = data.unread_count;
+        }
+
+        conversationsList.prepend(row);
     };
 
-    notificationSocket.onerror = (error) => {
-        console.error("Notification WebSocket error:", error);
-    };
+    connectWithReconnect(
+        () => `${protocol}://${window.location.host}/ws/notifications/`,
+        {
+            onMessage: (data) => {
+                if (data.kind === "conversation_update") {
+                    console.log("Received conversation update:", data);
+                    handleConversationUpdate(data);
+                    return;
+                }
 
-    notificationSocket.onclose = () => {
-        console.warn("Notification WebSocket connection closed.");
-    };
+                const notificationId = String(data.id);
+                const unreadCount = Number(data.unread_count);
+
+                console.log("Received notification:", data);
+
+                badge.textContent = unreadCount;
+                badge.style.display = unreadCount > 0
+                    ? "inline-block"
+                    : "none";
+
+                if (receivedNotificationIds.has(notificationId)) {
+                    console.log(
+                        "Duplicate notification ignored:",
+                        notificationId
+                    );
+                    return;
+                }
+
+                receivedNotificationIds.add(notificationId);
+                showNotificationToast(data);
+            },
+        }
+    );
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+    const threadContainer = document.querySelector(".messages-thread");
+
+    if (threadContainer) {
+        threadContainer.scrollTop = threadContainer.scrollHeight;
+    }
+
+    const messageForm = document.querySelector(".message-form");
+    const messageInput = messageForm?.querySelector("textarea");
+
+    if (!messageForm || !messageInput) {
+        return;
+    }
+
+    messageInput.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" || event.shiftKey) {
+            return;
+        }
+
+        event.preventDefault();
+
+        if (messageInput.value.trim() === "") {
+            return;
+        }
+
+        messageForm.submit();
+    });
 });
 
 window.addEventListener("pageshow", (event) => {

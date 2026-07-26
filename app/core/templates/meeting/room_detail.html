@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load static %}
+{% load meeting_extras %}
+
+{% block content %}
+<div class="meeting-detail-card">
+    <h1>Room for {{ meeting.title }}</h1>
+
+    {% if meeting.room.is_active %}
+        <p>Room is active.</p>
+
+        <p class="room-online-users">
+            Online:
+            <span id="room-online-list">
+                {% for online_user in online_users %}{{ online_user.name }}{% if not forloop.last %}, {% endif %}{% empty %}Nobody yet{% endfor %}
+            </span>
+        </p>
+
+        <div
+            class="messages-thread room-chat-thread"
+            data-meeting-id="{{ meeting.id }}"
+        >
+            {% for message in meeting.room.messages.all %}
+                <div
+                    class="message-item {% if message.sender == user %}message-item-sent{% else %}message-item-received{% endif %}"
+                    data-message-id="{{ message.id }}"
+                    style="--sender-color: {{ message.sender_id|sender_color }};"
+                >
+                    <p class="message-sender">{{ message.sender.name }}</p>
+                    <p class="message-content">{{ message.content }}</p>
+                    <p class="message-date">{{ message.created_at|date:"d M Y H:i" }}</p>
+                </div>
+            {% empty %}
+                <p class="messenger-empty-hint">No messages yet. Say hello!</p>
+            {% endfor %}
+        </div>
+
+        <form
+            action="{% url 'meeting:room-message-send' meeting.id %}"
+            method="post"
+            class="message-form room-chat-form"
+        >
+            {% csrf_token %}
+            {{ message_form.content }}
+            <button type="submit">Send</button>
+        </form>
+    {% else %}
+        <p>This room is not open yet (or has already ended).</p>
+    {% endif %}
+</div>
+
+<script src="{% static 'js/room-chat.js' %}"></script>
+{% endblock %}

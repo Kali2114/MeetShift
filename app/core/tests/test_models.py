@@ -65,6 +65,11 @@ class ModelTests(TestCase):
         with self.assertRaises(ValueError):
             utils.create_user(name="")
 
+    def test_new_user_with_invalid_email_raise_error(self):
+        """Test raises ValueError when creating user with malformed email."""
+        with self.assertRaises(ValueError):
+            utils.create_user(email="not-an-email")
+
     def test_create_superuser(self):
         """Test creating a superuser successful."""
         user = get_user_model().objects.create_superuser(
@@ -205,3 +210,260 @@ class ModelTests(TestCase):
         )
 
         self.assertFalse(notification.is_read)
+
+    def test_create_conversation(self):
+        """Test creating conversation successful."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+
+        conversation = utils.create_conversation(user_a, user_b)
+
+        self.assertEqual(
+            str(conversation),
+            f"Conversation between {conversation.user1} and {conversation.user2}",
+        )
+
+    def test_conversation_users_stored_in_canonical_order(self):
+        """Test conversation always stores the lower-pk user as user1."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+
+        conversation_forward = utils.create_conversation(user_a, user_b)
+        conversation_reversed = utils.create_conversation(user_b, user_a)
+
+        self.assertEqual(conversation_forward.id, conversation_reversed.id)
+        self.assertEqual(
+            conversation_forward.user1, min(user_a, user_b, key=lambda u: u.pk)
+        )
+
+    def test_duplicate_conversation_pair_raises_error(self):
+        """Test creating a duplicate conversation for the same pair raises error."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        user1, user2 = sorted([user_a, user_b], key=lambda u: u.pk)
+
+        models.Conversation.objects.create(user1=user1, user2=user2)
+
+        with self.assertRaises(IntegrityError):
+            models.Conversation.objects.create(user1=user1, user2=user2)
+
+    def test_conversation_with_self_raises_error(self):
+        """Test creating a conversation with the same user twice raises error."""
+        user = utils.create_user()
+
+        with self.assertRaises(IntegrityError):
+            models.Conversation.objects.create(user1=user, user2=user)
+
+    def test_create_message(self):
+        """Test creating message successful."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        message = utils.create_message(
+            conversation=conversation,
+            sender=user_a,
+            content="Hello!",
+        )
+
+        self.assertEqual(
+            str(message),
+            f"Message from {user_a} in conversation {conversation.id}",
+        )
+
+    def test_message_default_is_unread(self):
+        """Test message is unread by default."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        message = utils.create_message(conversation=conversation, sender=user_a)
+
+        self.assertFalse(message.is_read)
+
+    def test_messages_ordered_by_created_at(self):
+        """Test messages are returned in chronological order."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        first = utils.create_message(
+            conversation=conversation, sender=user_a, content="first"
+        )
+        second = utils.create_message(
+            conversation=conversation, sender=user_b, content="second"
+        )
+
+        self.assertEqual(list(conversation.messages.all()), [first, second])
+
+    def test_conversation_other_participant(self):
+        """Test other_participant returns the participant that isn't given."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        self.assertEqual(conversation.other_participant(user_a), user_b)
+        self.assertEqual(conversation.other_participant(user_b), user_a)
+
+    def test_create_notification_with_conversation(self):
+        """Test notification can reference a conversation instead of a meeting."""
+        user_a = utils.create_user(email="a@example.com", name="user_a")
+        user_b = utils.create_user(email="b@example.com", name="user_b")
+        conversation = utils.create_conversation(user_a, user_b)
+
+        notification = models.Notification.objects.create(
+            user=user_a,
+            conversation=conversation,
+            message="New message from user_b",
+        )
+
+        self.assertEqual(notification.conversation, conversation)
+        self.assertIsNone(notification.meeting)
+
+    def test_create_room(self):
+        """Test creating room successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+
+        self.assertEqual(str(room), f"Room for {meeting} meeting.")
+
+    def test_room_not_active_before_activation_window(self):
+        """Test room is not active more than 10 minutes before meeting start."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() + timedelta(minutes=20),
+            ended_at=timezone.now() + timedelta(hours=1),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertFalse(room.is_active())
+
+    def test_room_active_within_activation_window(self):
+        """Test room is active within 10 minutes before meeting start."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() + timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(hours=1),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_active_during_meeting(self):
+        """Test room is active while the meeting is ongoing."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(minutes=10),
+            ended_at=timezone.now() + timedelta(minutes=10),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_active_within_grace_period_after_meeting_ends(self):
+        """Test room is active within 10 minutes after meeting end."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(hours=1),
+            ended_at=timezone.now() - timedelta(minutes=5),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_not_active_after_grace_period(self):
+        """Test room is not active after the grace period following meeting end."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(hours=2),
+            ended_at=timezone.now() - timedelta(minutes=15),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertFalse(room.is_active())
+
+    def test_room_manual_end_overrides_active_window(self):
+        """Test manually ending the room makes it inactive even mid-meeting."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(minutes=10),
+            ended_at=timezone.now() + timedelta(minutes=10),
+        )
+        room = utils.create_room(
+            meeting=meeting, ended_at=timezone.now() - timedelta(minutes=1)
+        )
+
+        self.assertFalse(room.is_active())
+
+    def test_create_room_message(self):
+        """Test creating room message successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        message = utils.create_room_message(
+            room=room, sender=organizer, content="Hello room!"
+        )
+
+        self.assertEqual(str(message), f"Message from {organizer} in room {room.id}")
+
+    def test_room_messages_ordered_by_created_at(self):
+        """Test room messages are returned in chronological order."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+
+        first = utils.create_room_message(room=room, sender=organizer, content="first")
+        second = utils.create_room_message(
+            room=room, sender=organizer, content="second"
+        )
+
+        self.assertEqual(list(room.messages.all()), [first, second])
+
+    def test_create_room_presence(self):
+        """Test creating room presence successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        presence = utils.create_room_presence(room=room, user=organizer)
+
+        self.assertEqual(str(presence), f"{organizer} present in {room}")
+        self.assertEqual(presence.connection_count, 1)
+
+    def test_room_presence_unique_per_room_and_user(self):
+        """Test only one presence row can exist per room and user."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        utils.create_room_presence(room=room, user=organizer)
+
+        with self.assertRaises(IntegrityError):
+            utils.create_room_presence(room=room, user=organizer)
+
+    def test_create_room_read_state(self):
+        """Test creating room read state successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        read_state = utils.create_room_read_state(room=room, user=organizer)
+
+        self.assertEqual(
+            str(read_state),
+            f"{organizer} read {room} up to {read_state.last_read_at}",
+        )
+
+    def test_room_read_state_unique_per_room_and_user(self):
+        """Test only one read state row can exist per room and user."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+        utils.create_room_read_state(room=room, user=organizer)
+
+        with self.assertRaises(IntegrityError):
+            utils.create_room_read_state(room=room, user=organizer)
