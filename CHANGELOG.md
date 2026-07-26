@@ -6,6 +6,60 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Planned for v3.0.0 — AI Meeting Assistant
+
+#### AI assistant
+- AI assistant connected to meetings.
+- Automatic meeting agenda generation.
+- Suggested discussion topics.
+- Suggested questions based on the meeting description.
+- Meeting preparation assistance.
+- Intelligent follow-up suggestions.
+
+#### Meeting summaries
+- AI-generated meeting summaries.
+- Extraction of key decisions.
+- Automatic action item generation.
+- Assignment of action items to participants.
+- Summary history connected to meetings.
+
+#### Scheduling intelligence
+- Suggested meeting times based on participant availability.
+- Detection of scheduling conflicts.
+- Intelligent reminders for participants who have not responded.
+- Suggested rescheduling options.
+
+#### Chat and room intelligence
+- Summaries of long meeting room conversations.
+- Important message detection.
+- Extraction of decisions from room chat.
+- AI-generated answers based on meeting context.
+- Context-aware assistance for meeting participants.
+
+#### Agent architecture
+- Single-agent meeting assistant.
+- Possible multi-agent architecture for planning, summarization and follow-up.
+- Specialized agents for:
+  - scheduling,
+  - agenda generation,
+  - conversation summarization,
+  - action item extraction,
+  - reminders and follow-ups.
+- Agent memory connected to meeting history.
+- Controlled access to meeting, participant and conversation data.
+
+#### Security and reliability
+- Validation of AI-generated content.
+- Protection against prompt injection.
+- Permission-aware access to meeting data.
+- Audit logging for AI actions.
+- Rate limiting and usage monitoring.
+- Fallback behavior when AI services are unavailable.
+
+---
+
+## [v2.0.0] — Real-Time Communication & Meeting Rooms (2026-07-26)
+
 ### Added
 
 #### Messaging
@@ -97,58 +151,6 @@ All notable changes to this project will be documented in this file.
   the rest of the UI instead of rendering as plain links.
 - Message input field no longer capped at 500px width, out of alignment
   with the rest of the chat box.
-
----
-
-### Planned for v3.0.0 — AI Meeting Assistant
-
-#### AI assistant
-- AI assistant connected to meetings.
-- Automatic meeting agenda generation.
-- Suggested discussion topics.
-- Suggested questions based on the meeting description.
-- Meeting preparation assistance.
-- Intelligent follow-up suggestions.
-
-#### Meeting summaries
-- AI-generated meeting summaries.
-- Extraction of key decisions.
-- Automatic action item generation.
-- Assignment of action items to participants.
-- Summary history connected to meetings.
-
-#### Scheduling intelligence
-- Suggested meeting times based on participant availability.
-- Detection of scheduling conflicts.
-- Intelligent reminders for participants who have not responded.
-- Suggested rescheduling options.
-
-#### Chat and room intelligence
-- Summaries of long meeting room conversations.
-- Important message detection.
-- Extraction of decisions from room chat.
-- AI-generated answers based on meeting context.
-- Context-aware assistance for meeting participants.
-
-#### Agent architecture
-- Single-agent meeting assistant.
-- Possible multi-agent architecture for planning, summarization and follow-up.
-- Specialized agents for:
-  - scheduling,
-  - agenda generation,
-  - conversation summarization,
-  - action item extraction,
-  - reminders and follow-ups.
-- Agent memory connected to meeting history.
-- Controlled access to meeting, participant and conversation data.
-
-#### Security and reliability
-- Validation of AI-generated content.
-- Protection against prompt injection.
-- Permission-aware access to meeting data.
-- Audit logging for AI actions.
-- Rate limiting and usage monitoring.
-- Fallback behavior when AI services are unavailable.
 
 ---
 
