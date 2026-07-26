@@ -46,6 +46,9 @@ All notable changes to this project will be documented in this file.
 - Online/offline presence tracking for room participants.
 - Unread room message counters on the "Enter room" link and the meetings
   list, based on a per-user last-read cursor per room.
+- Notifications for new room activity: the organizer and other accepted
+  participants (excluding the sender) are notified through the existing
+  notification system when a room message is sent.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -64,9 +67,6 @@ All notable changes to this project will be documented in this file.
 - Responsive messaging layout for small screens (not yet built or verified
   on mobile).
 - Conversation header avatar (currently sidebar-only).
-
-#### Meeting rooms
-- Notifications for new room activity.
 
 #### Frontend
 - Dark mode.

@@ -15,6 +15,7 @@ from meeting.utils import (
     mark_user_present,
     meeting_calendar_events,
     online_room_users,
+    room_notification_recipients,
     room_unread_count,
 )
 
@@ -266,3 +267,59 @@ class RoomUnreadCountTests(TestCase):
         mark_room_read(meeting.room, organizer)
 
         self.assertEqual(room_unread_count(meeting.room, organizer), 0)
+
+
+class RoomNotificationRecipientsTests(TestCase):
+    """Tests for determining who to notify about new room activity."""
+
+    def test_includes_organizer_when_not_sender(self):
+        """Test the organizer is included when someone else sends a message."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        sender = utils.create_user(email="s@example.com", name="sender")
+        utils.create_meeting_participant(
+            meeting=meeting, user=sender, invitation_status="ACC"
+        )
+
+        recipients = room_notification_recipients(meeting, sender)
+
+        self.assertEqual(recipients, {organizer})
+
+    def test_excludes_sender_when_sender_is_organizer(self):
+        """Test the organizer is excluded from their own notifications."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+
+        recipients = room_notification_recipients(meeting, organizer)
+
+        self.assertEqual(recipients, set())
+
+    def test_includes_accepted_participants_excluding_sender(self):
+        """Test accepted participants other than the sender are included."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        accepted = utils.create_user(email="a@example.com", name="accepted")
+        utils.create_meeting_participant(
+            meeting=meeting, user=accepted, invitation_status="ACC"
+        )
+
+        recipients = room_notification_recipients(meeting, organizer)
+
+        self.assertEqual(recipients, {accepted})
+
+    def test_excludes_pending_and_declined_participants(self):
+        """Test pending and declined participants are never included."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        pending = utils.create_user(email="p@example.com", name="pending")
+        declined = utils.create_user(email="d@example.com", name="declined")
+        utils.create_meeting_participant(
+            meeting=meeting, user=pending, invitation_status="PND"
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=declined, invitation_status="DEC"
+        )
+
+        recipients = room_notification_recipients(meeting, organizer)
+
+        self.assertEqual(recipients, set())

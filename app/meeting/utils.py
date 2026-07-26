@@ -129,6 +129,18 @@ def mark_room_read(room, user):
     )
 
 
+def room_notification_recipients(meeting, sender):
+    """Return users who can access the meeting's room, excluding the sender."""
+    recipients = {
+        participant.user
+        for participant in meeting.participants.filter(invitation_status="ACC")
+    }
+    recipients.add(meeting.organizer)
+    recipients.discard(sender)
+
+    return recipients
+
+
 def user_has_meeting_conflict(user, meeting):
     """Check if user has accepted meeting in the same time."""
     return (

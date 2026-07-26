@@ -833,6 +833,61 @@ class PrivateMeetingViewsTests(TestCase):
 
         self.assertFalse(RoomMessage.objects.exists())
 
+    def test_send_room_message_notifies_other_room_members(self):
+        """Test sending a room message notifies the organizer and other participants."""
+        meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+        other_participant = utils.create_user(email="other@example.com", name="other")
+        utils.create_meeting_participant(
+            meeting=meeting, user=other_participant, invitation_status="ACC"
+        )
+        pending_participant = utils.create_user(
+            email="pending2@example.com", name="pending2"
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=pending_participant, invitation_status="PND"
+        )
+
+        self.client.post(get_room_message_send_url(meeting.id), {"content": "Hello!"})
+
+        self.assertTrue(
+            Notification.objects.filter(user=self.organizer, meeting=meeting).exists()
+        )
+        self.assertTrue(
+            Notification.objects.filter(
+                user=other_participant, meeting=meeting
+            ).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(
+                user=pending_participant, meeting=meeting
+            ).exists()
+        )
+        self.assertFalse(
+            Notification.objects.filter(user=self.user, meeting=meeting).exists()
+        )
+
+    def test_send_room_message_does_not_notify_when_form_invalid(self):
+        """Test an empty room message does not create any notifications."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.organizer, invitation_status="ACC"
+        )
+
+        self.client.post(get_room_message_send_url(meeting.id), {"content": ""})
+
+        self.assertFalse(Notification.objects.exists())
+
     def test_room_detail_marks_room_read_when_active(self):
         """Test visiting an active room marks its messages as read."""
         meeting = utils.create_meeting(

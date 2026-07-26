@@ -25,6 +25,7 @@ from meeting.utils import (
     mark_room_read,
     meeting_calendar_events,
     online_room_users,
+    room_notification_recipients,
     room_unread_count,
     user_accessible_room_meetings,
     user_has_meeting_conflict,
@@ -303,6 +304,13 @@ class SendRoomMessageView(LoginRequiredMixin, View):
                 sender=request.user,
                 content=form.cleaned_data["content"],
             )
+
+            for recipient in room_notification_recipients(meeting, request.user):
+                create_notification(
+                    user=recipient,
+                    meeting=meeting,
+                    message=f"New message from {request.user.name} in {meeting.title}",
+                )
 
             logger.info(
                 "Room message sent: meeting_id=%s sender_id=%s",
