@@ -84,3 +84,8 @@ def create_message(**params):
     }
     default_message.update(**params)
     return models.Message.objects.create(**default_message)
+
+
+def create_room(**params):
+    """Create and return a new room."""
+    return models.Room.objects.create(**params)

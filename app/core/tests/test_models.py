@@ -319,3 +319,85 @@ class ModelTests(TestCase):
 
         self.assertEqual(notification.conversation, conversation)
         self.assertIsNone(notification.meeting)
+
+    def test_create_room(self):
+        """Test creating room successful."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = utils.create_room(meeting=meeting)
+
+        self.assertEqual(str(room), f"Room for {meeting} meeting.")
+
+    def test_room_not_active_before_activation_window(self):
+        """Test room is not active more than 10 minutes before meeting start."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() + timedelta(minutes=20),
+            ended_at=timezone.now() + timedelta(hours=1),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertFalse(room.is_active())
+
+    def test_room_active_within_activation_window(self):
+        """Test room is active within 10 minutes before meeting start."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() + timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(hours=1),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_active_during_meeting(self):
+        """Test room is active while the meeting is ongoing."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(minutes=10),
+            ended_at=timezone.now() + timedelta(minutes=10),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_active_within_grace_period_after_meeting_ends(self):
+        """Test room is active within 10 minutes after meeting end."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(hours=1),
+            ended_at=timezone.now() - timedelta(minutes=5),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertTrue(room.is_active())
+
+    def test_room_not_active_after_grace_period(self):
+        """Test room is not active after the grace period following meeting end."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(hours=2),
+            ended_at=timezone.now() - timedelta(minutes=15),
+        )
+        room = utils.create_room(meeting=meeting)
+
+        self.assertFalse(room.is_active())
+
+    def test_room_manual_end_overrides_active_window(self):
+        """Test manually ending the room makes it inactive even mid-meeting."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(
+            organizer=organizer,
+            started_at=timezone.now() - timedelta(minutes=10),
+            ended_at=timezone.now() + timedelta(minutes=10),
+        )
+        room = utils.create_room(
+            meeting=meeting, ended_at=timezone.now() - timedelta(minutes=1)
+        )
+
+        self.assertFalse(room.is_active())

@@ -4,6 +4,7 @@ Database models.
 
 import os
 import uuid
+from datetime import timedelta
 
 from core import enums
 from core.utils import check_email_and_name
@@ -274,3 +275,34 @@ class Message(models.Model):
 
     def __str__(self):
         return f"Message from {self.sender} in conversation {self.conversation_id}"
+
+
+class Room(models.Model):
+    """Model for room object."""
+
+    meeting = models.OneToOneField(
+        "Meeting",
+        on_delete=models.CASCADE,
+        related_name="room",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"Room for {self.meeting} meeting."
+
+    def is_active(self):
+        """Return true if room is active."""
+        now = timezone.now()
+        activation_time = self.meeting.started_at - timedelta(minutes=10)
+
+        if now < activation_time:
+            return False
+
+        natural_closing_time = self.meeting.ended_at + timedelta(minutes=10)
+
+        closing_times = [natural_closing_time]
+        if self.ended_at is not None:
+            closing_times.append(self.ended_at)
+
+        return now <= min(closing_times)
