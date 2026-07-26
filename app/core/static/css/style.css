@@ -849,6 +849,8 @@ textarea {
 }
 
 .message-form textarea {
+    flex: 1;
+    max-width: none;
     height: 40px;
     min-height: 40px;
     max-height: 100px;
