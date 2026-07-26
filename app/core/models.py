@@ -343,3 +343,25 @@ class RoomPresence(models.Model):
 
     def __str__(self):
         return f"{self.user} present in {self.room}"
+
+
+class RoomReadState(models.Model):
+    """Model tracking when a user last read a room's messages."""
+
+    room = models.ForeignKey(
+        "Room", on_delete=models.CASCADE, related_name="read_states"
+    )
+    user = models.ForeignKey(
+        "User", on_delete=models.CASCADE, related_name="room_read_states"
+    )
+    last_read_at = models.DateTimeField(default=timezone.now)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["room", "user"], name="unique_room_read_state"
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.user} read {self.room} up to {self.last_read_at}"

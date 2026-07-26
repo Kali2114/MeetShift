@@ -4,16 +4,18 @@ Tests for meeting utils.
 
 from datetime import timedelta
 
-from core.models import RoomPresence
+from core.models import RoomMessage, RoomPresence, RoomReadState
 from core.tests import utils
 from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import (
+    mark_room_read,
     mark_user_absent,
     mark_user_present,
     meeting_calendar_events,
     online_room_users,
+    room_unread_count,
 )
 
 
@@ -182,3 +184,85 @@ class RoomPresenceTests(TestCase):
 
         self.assertIn(organizer, online_users)
         self.assertNotIn(participant, online_users)
+
+
+class RoomUnreadCountTests(TestCase):
+    """Tests for room unread message count and read-state tracking."""
+
+    def test_room_unread_count_zero_with_no_messages(self):
+        """Test unread count is zero when the room has no messages."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+
+        self.assertEqual(room_unread_count(meeting.room, organizer), 0)
+
+    def test_room_unread_count_counts_messages_never_read(self):
+        """Test unread count includes all messages when never read."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        participant = utils.create_user(email="p@example.com", name="participant")
+        utils.create_room_message(room=meeting.room, sender=participant, content="hi")
+        utils.create_room_message(
+            room=meeting.room, sender=participant, content="hi again"
+        )
+
+        self.assertEqual(room_unread_count(meeting.room, organizer), 2)
+
+    def test_room_unread_count_excludes_own_messages(self):
+        """Test a user's own messages never count as unread for them."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        utils.create_room_message(room=meeting.room, sender=organizer, content="hi")
+
+        self.assertEqual(room_unread_count(meeting.room, organizer), 0)
+
+    def test_room_unread_count_only_counts_messages_after_last_read(self):
+        """Test messages sent before the last read time are not unread."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        participant = utils.create_user(email="p@example.com", name="participant")
+        old_message = utils.create_room_message(
+            room=meeting.room, sender=participant, content="old"
+        )
+        RoomMessage.objects.filter(pk=old_message.pk).update(
+            created_at=timezone.now() - timedelta(hours=1)
+        )
+        utils.create_room_read_state(room=meeting.room, user=organizer)
+
+        utils.create_room_message(room=meeting.room, sender=participant, content="new")
+
+        self.assertEqual(room_unread_count(meeting.room, organizer), 1)
+
+    def test_mark_room_read_creates_read_state(self):
+        """Test marking a room read creates a read state row."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+
+        mark_room_read(meeting.room, organizer)
+
+        self.assertTrue(
+            RoomReadState.objects.filter(room=meeting.room, user=organizer).exists()
+        )
+
+    def test_mark_room_read_updates_existing_read_state(self):
+        """Test marking a room read again updates the row instead of duplicating."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        mark_room_read(meeting.room, organizer)
+
+        mark_room_read(meeting.room, organizer)
+
+        self.assertEqual(
+            RoomReadState.objects.filter(room=meeting.room, user=organizer).count(), 1
+        )
+
+    def test_room_unread_count_zero_after_mark_room_read(self):
+        """Test unread count resets to zero after marking the room read."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        participant = utils.create_user(email="p@example.com", name="participant")
+        utils.create_room_message(room=meeting.room, sender=participant, content="hi")
+
+        mark_room_read(meeting.room, organizer)
+
+        self.assertEqual(room_unread_count(meeting.room, organizer), 0)

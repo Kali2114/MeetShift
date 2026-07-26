@@ -2,10 +2,17 @@
 Utils for meeting app.
 """
 
-from core.models import Meeting, MeetingParticipant, RoomPresence, User
+from core.models import (
+    Meeting,
+    MeetingParticipant,
+    RoomPresence,
+    RoomReadState,
+    User,
+)
 from django.db.models import Q
 from django.templatetags.static import static
 from django.urls import reverse
+from django.utils import timezone
 
 RESPONDED_STATUSES = ("ACC", "DEC")
 
@@ -101,6 +108,25 @@ def mark_user_absent(room, user):
 def online_room_users(room):
     """Return users currently present in a room."""
     return User.objects.filter(room_presences__room=room).distinct()
+
+
+def room_unread_count(room, user):
+    """Return the number of unread messages in a room for a user."""
+    messages = room.messages.exclude(sender=user)
+
+    try:
+        read_state = room.read_states.get(user=user)
+    except RoomReadState.DoesNotExist:
+        return messages.count()
+
+    return messages.filter(created_at__gt=read_state.last_read_at).count()
+
+
+def mark_room_read(room, user):
+    """Record that a user has read a room's messages up to now."""
+    RoomReadState.objects.update_or_create(
+        room=room, user=user, defaults={"last_read_at": timezone.now()}
+    )
 
 
 def user_has_meeting_conflict(user, meeting):

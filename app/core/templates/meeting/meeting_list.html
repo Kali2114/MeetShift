@@ -9,6 +9,9 @@
                 <a href="{% url 'meeting:detail-meeting' meeting.id %}">
                     {{ meeting.title }}
                 </a>
+                {% if meeting.room_unread_count %}
+                    <span class="notification-badge">{{ meeting.room_unread_count }}</span>
+                {% endif %}
             </h2>
 
             <p>{{ meeting.description }}</p>

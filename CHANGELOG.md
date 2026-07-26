@@ -44,6 +44,8 @@ All notable changes to this project will be documented in this file.
 - Meeting detail page shows the schedule (start/end time) and an "Enter
   room" link.
 - Online/offline presence tracking for room participants.
+- Unread room message counters on the "Enter room" link and the meetings
+  list, based on a per-user last-read cursor per room.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -64,7 +66,6 @@ All notable changes to this project will be documented in this file.
 - Conversation header avatar (currently sidebar-only).
 
 #### Meeting rooms
-- Unread room message counters.
 - Notifications for new room activity.
 
 #### Frontend

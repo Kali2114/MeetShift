@@ -22,8 +22,10 @@ from django.views.generic import (
 )
 from meeting.forms import InviteParticipantForm, MeetingForm, RoomMessageForm
 from meeting.utils import (
+    mark_room_read,
     meeting_calendar_events,
     online_room_users,
+    room_unread_count,
     user_accessible_room_meetings,
     user_has_meeting_conflict,
     user_meetings_queryset,
@@ -54,8 +56,13 @@ class MeetingListView(LoginRequiredMixin, ListView):
     context_object_name = "meetings"
 
     def get_queryset(self):
-        """Return meetings participates by current user."""
-        return user_meetings_queryset(self.request.user)
+        """Return meetings participates by current user, with room unread counts."""
+        user = self.request.user
+        meetings = list(user_meetings_queryset(user))
+        for meeting in meetings:
+            meeting.room_unread_count = room_unread_count(meeting.room, user)
+
+        return meetings
 
 
 class MeetingDetailView(LoginRequiredMixin, DetailView):
@@ -70,7 +77,7 @@ class MeetingDetailView(LoginRequiredMixin, DetailView):
         return user_meetings_queryset(self.request.user)
 
     def get_context_data(self, **kwargs):
-        """Attach whether the current user can enter the meeting's room."""
+        """Attach whether the current user can enter the room and its unread count."""
         context = super().get_context_data(**kwargs)
         user = self.request.user
         context["can_enter_room"] = (
@@ -79,6 +86,7 @@ class MeetingDetailView(LoginRequiredMixin, DetailView):
                 user=user, invitation_status="ACC"
             ).exists()
         )
+        context["room_unread_count"] = room_unread_count(self.object.room, user)
 
         return context
 
@@ -269,6 +277,9 @@ class RoomDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         context["message_form"] = RoomMessageForm()
         context["online_users"] = online_room_users(self.object.room)
+
+        if self.object.room.is_active():
+            mark_room_read(self.object.room, self.request.user)
 
         return context
 

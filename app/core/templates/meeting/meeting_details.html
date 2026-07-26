@@ -61,7 +61,12 @@
 
     {% if can_enter_room %}
         <div class="meeting-actions">
-            <a href="{% url 'meeting:room-detail' meeting.id %}" class="action-btn room-btn">Enter room</a>
+            <a href="{% url 'meeting:room-detail' meeting.id %}" class="action-btn room-btn">
+                Enter room
+                {% if room_unread_count %}
+                    <span class="notification-badge">{{ room_unread_count }}</span>
+                {% endif %}
+            </a>
         </div>
     {% endif %}
 

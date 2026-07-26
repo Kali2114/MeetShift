@@ -12,6 +12,7 @@ from django.contrib.messages import get_messages
 from django.test import Client, TestCase
 from django.urls import reverse
 from django.utils import timezone
+from meeting.utils import room_unread_count
 
 INDEX_URL = reverse("meeting:index")
 MEETING_LIST_URL = reverse("meeting:list")
@@ -831,3 +832,57 @@ class PrivateMeetingViewsTests(TestCase):
         self.client.post(get_room_message_send_url(meeting.id), {"content": ""})
 
         self.assertFalse(RoomMessage.objects.exists())
+
+    def test_room_detail_marks_room_read_when_active(self):
+        """Test visiting an active room marks its messages as read."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(room_unread_count(meeting.room, self.user), 0)
+
+    def test_room_detail_does_not_mark_read_when_inactive(self):
+        """Test visiting an inactive room does not mark its messages as read."""
+        meeting = utils.create_meeting(
+            organizer=self.user,
+            started_at=timezone.now() + timedelta(hours=2),
+            ended_at=timezone.now() + timedelta(hours=3),
+        )
+        room = utils.create_room(meeting=meeting)
+        utils.create_room_message(room=room, sender=self.organizer, content="hi")
+
+        self.client.get(get_room_detail_url(meeting.id))
+
+        self.assertEqual(room_unread_count(room, self.user), 1)
+
+    def test_meeting_detail_includes_room_unread_count(self):
+        """Test meeting detail context includes the room's unread message count."""
+        meeting = utils.create_meeting(organizer=self.user)
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        res = self.client.get(get_meeting_detail_url(meeting.id))
+
+        self.assertEqual(res.context["room_unread_count"], 1)
+        self.assertContains(res, '<span class="notification-badge">1</span>')
+
+    def test_meeting_list_includes_room_unread_count(self):
+        """Test meeting list annotates each meeting with its room unread count."""
+        meeting = utils.create_meeting(organizer=self.user)
+        utils.create_room_message(
+            room=meeting.room, sender=self.organizer, content="hi"
+        )
+
+        res = self.client.get(MEETING_LIST_URL)
+
+        listed_meeting = res.context["meetings"][0]
+        self.assertEqual(listed_meeting.room_unread_count, 1)
+        self.assertContains(res, '<span class="notification-badge">1</span>')

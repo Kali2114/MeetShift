@@ -111,3 +111,8 @@ def create_room_message(**params):
 def create_room_presence(**params):
     """Create and return a new room presence."""
     return models.RoomPresence.objects.create(**params)
+
+
+def create_room_read_state(**params):
+    """Create and return a new room read state."""
+    return models.RoomReadState.objects.create(**params)
