@@ -31,6 +31,19 @@ All notable changes to this project will be documented in this file.
 - Conversation ordering by latest activity.
 - Sidebar avatars for conversation participants.
 
+#### Meeting rooms
+- Dedicated room per meeting, auto-created alongside the meeting.
+- Room activates automatically 10 minutes before the meeting's start time
+  and closes 10 minutes after its end time; the organizer can also end it
+  early at any point.
+- Real-time room chat over its own WebSocket connection, separate from the
+  personal notification socket.
+- Room access limited to the organizer and accepted participants only,
+  enforced consistently across the page, the send endpoint, and the socket
+  connection itself.
+- Meeting detail page shows the schedule (start/end time) and an "Enter
+  room" link.
+
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
   default when the environment variable is missing or misnamed.
@@ -48,16 +61,15 @@ All notable changes to this project will be documented in this file.
 - Conversation header avatar (currently sidebar-only).
 
 #### Meeting rooms
-- Dedicated rooms connected to meetings.
-- Real-time room chat.
 - Presence tracking for meeting participants.
 - Online and offline participant status.
-- Room access limited to meeting participants.
 - Unread room message counters.
 - Notifications for new room activity.
 
 #### Frontend
-- Meeting room interface.
+- Dark mode.
+- Meeting room chat UI polish (currently a basic thread + input, reusing DM
+  styling as-is).
 - Better real-time state handling (e.g. WebSocket reconnection/backoff).
 
 #### Infrastructure
