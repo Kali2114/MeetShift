@@ -75,6 +75,11 @@ All notable changes to this project will be documented in this file.
   connections and connect/disconnect rates, broken down by consumer
   (notifications vs. room chat) — previously invisible, since
   django-prometheus only instruments regular HTTP traffic.
+- Consumer-level tests for two real-time scenarios that were previously
+  only unit-tested indirectly: a user with two tabs open in the same room
+  staying online until both disconnect, and a disconnect/reconnect cycle
+  returning cleanly to baseline without leaking presence rows or
+  connection metrics.
 
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
@@ -91,7 +96,6 @@ All notable changes to this project will be documented in this file.
 
 #### Infrastructure
 - WebSocket scaling improvements.
-- Additional tests for real-time communication.
 - Performance and reliability improvements for long-lived WebSocket connections.
 
 ---

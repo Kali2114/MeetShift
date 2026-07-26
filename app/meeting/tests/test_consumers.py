@@ -224,4 +224,69 @@ class RoomConsumerTests(TransactionTestCase):
         self.assertEqual(len(response["online_users"]), 1)
         self.assertEqual(response["online_users"][0]["id"], participant.id)
 
-        await second_communicator.disconnect()
+    async def test_same_user_two_tabs_stays_online_until_both_disconnect(self):
+        """Test one of two tabs for the same user closing keeps them online."""
+        first, first_connected = await self.connect(self.organizer)
+        self.assertTrue(first_connected)
+        await first.receive_json_from()  # first tab's own join broadcast
+
+        second, second_connected = await self.connect(self.organizer)
+        self.assertTrue(second_connected)
+        await first.receive_json_from()  # first tab sees the second tab join
+        await second.receive_json_from()  # second tab's own join broadcast
+
+        await first.disconnect()
+
+        response = await second.receive_json_from()
+
+        self.assertEqual(response["kind"], "room_presence")
+        self.assertEqual(
+            response["online_users"],
+            [{"id": self.organizer.id, "name": self.organizer.name}],
+        )
+
+        presence = await sync_to_async(RoomPresence.objects.get)(
+            room=self.meeting.room, user=self.organizer
+        )
+        self.assertEqual(presence.connection_count, 1)
+
+        await second.disconnect()
+
+        presence_exists = await sync_to_async(
+            RoomPresence.objects.filter(
+                room=self.meeting.room, user=self.organizer
+            ).exists
+        )()
+        self.assertFalse(presence_exists)
+
+    async def test_reconnect_cycle_does_not_leak_presence_or_metrics(self):
+        """Test a disconnect/reconnect cycle returns cleanly to baseline state."""
+        active = websocket_connections_active.labels(consumer="room")
+        active_before = active._value.get()
+
+        communicator, connected = await self.connect(self.organizer)
+        self.assertTrue(connected)
+        await communicator.receive_json_from()  # own join broadcast
+        await communicator.disconnect()
+
+        self.assertEqual(active._value.get(), active_before)
+        presence_exists = await sync_to_async(
+            RoomPresence.objects.filter(
+                room=self.meeting.room, user=self.organizer
+            ).exists
+        )()
+        self.assertFalse(presence_exists)
+
+        # Simulates ws-reconnect.js firing a fresh connect() after the close event.
+        reconnected, reconnected_ok = await self.connect(self.organizer)
+        self.assertTrue(reconnected_ok)
+        await reconnected.receive_json_from()  # own join broadcast
+
+        self.assertEqual(active._value.get(), active_before + 1)
+
+        presence = await sync_to_async(RoomPresence.objects.get)(
+            room=self.meeting.room, user=self.organizer
+        )
+        self.assertEqual(presence.connection_count, 1)
+
+        await reconnected.disconnect()
