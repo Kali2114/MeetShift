@@ -56,7 +56,9 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [("redis", 6379)],
+            # Own DB index (1), separate from Celery's broker/backend (DB 0),
+            # so flushing or inspecting one doesn't touch the other's data.
+            "hosts": ["redis://redis:6379/1"],
         },
     },
 }

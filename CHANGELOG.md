@@ -67,6 +67,11 @@ All notable changes to this project will be documented in this file.
   color for their name, so a multi-person conversation is easier to
   follow at a glance (not needed for DMs, which are always 1:1).
 
+#### Infrastructure
+- Channels' Redis channel layer now uses its own Redis DB index (1),
+  separate from Celery's broker/result backend (DB 0), which had been
+  implicitly sharing DB 0 with no explicit index set.
+
 #### Fixed
 - Production `SECRET_KEY` no longer silently falls back to a hardcoded
   default when the environment variable is missing or misnamed.
@@ -82,7 +87,6 @@ All notable changes to this project will be documented in this file.
 
 #### Infrastructure
 - WebSocket scaling improvements.
-- Improved Redis channel layer configuration.
 - Additional monitoring for chat and room connections.
 - Additional tests for real-time communication.
 - Performance and reliability improvements for long-lived WebSocket connections.
