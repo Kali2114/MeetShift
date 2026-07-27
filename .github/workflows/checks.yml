@@ -22,13 +22,17 @@ jobs:
         postgres-version: ["16.2-alpine3.19", "17-alpine"]
 
     env:
+      # Fixed, non-sensitive values for the ephemeral CI-only Postgres
+      # container (not real credentials, nothing to protect). Actions
+      # secrets aren't exposed to Dependabot-triggered runs, so pulling
+      # these from secrets.* broke CI on every dependency-bump PR.
       DB_HOST: db
-      DB_USER: ${{ secrets.DB_USER }}
-      DB_PASS: ${{ secrets.DB_PASS }}
-      DB_NAME: ${{ secrets.DB_NAME }}
-      POSTGRES_DB: ${{ secrets.DB_NAME }}
-      POSTGRES_USER: ${{ secrets.DB_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.DB_PASS }}
+      DB_USER: ci_test_user
+      DB_PASS: ci-test-db-password-not-for-production
+      DB_NAME: ci_test_db
+      POSTGRES_DB: ci_test_db
+      POSTGRES_USER: ci_test_user
+      POSTGRES_PASSWORD: ci-test-db-password-not-for-production
       EMAIL_BACKEND: django.core.mail.backends.locmem.EmailBackend
       EMAIL_PORT: 587
       POSTGRES_IMAGE: postgres:${{ matrix.postgres-version }}
