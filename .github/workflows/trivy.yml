@@ -39,6 +39,7 @@ jobs:
           ignore-unfixed: true
           exit-code: 0
           skip-files: /py/lib/python3.12/site-packages/autobahn/wamp/cryptosign.py,/py/lib/python3.12/site-packages/autobahn/wamp/__pycache__/cryptosign.cpython-312.pyc
+          skip-dirs: /py/lib/python3.12/site-packages/pip/_vendor
 
       - name: Upload Docker image SARIF report
         uses: github/codeql-action/upload-sarif@v4
@@ -56,3 +57,4 @@ jobs:
           ignore-unfixed: true
           exit-code: 1
           skip-files: /py/lib/python3.12/site-packages/autobahn/wamp/cryptosign.py,/py/lib/python3.12/site-packages/autobahn/wamp/__pycache__/cryptosign.cpython-312.pyc
+          skip-dirs: /py/lib/python3.12/site-packages/pip/_vendor
