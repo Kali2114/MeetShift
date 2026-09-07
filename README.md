@@ -292,6 +292,14 @@ Passwords, tokens and complete login credentials are never written to applicatio
 
 ---
 
+## 🛡 Reliability
+
+- Room presence tracking runs inside atomic database transactions with row-level
+  locking, so concurrent WebSocket connects and disconnects for the same user
+  (for example, multiple browser tabs) cannot lose presence-count updates.
+
+---
+
 ## 📊 Monitoring and Alerting
 
 Prometheus collects Django application metrics and Grafana displays dashboards.

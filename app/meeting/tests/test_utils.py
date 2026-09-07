@@ -2,11 +2,13 @@
 Tests for meeting utils.
 """
 
+import threading
 from datetime import timedelta
 
 from core.models import RoomMessage, RoomPresence, RoomReadState
 from core.tests import utils
-from django.test import TestCase
+from django.db import connection
+from django.test import TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import (
@@ -187,6 +189,73 @@ class RoomPresenceTests(TestCase):
 
         self.assertIn(organizer, online_users)
         self.assertNotIn(participant, online_users)
+
+
+class RoomPresenceConcurrencyTests(TransactionTestCase):
+    """Concurrency regression tests for room presence tracking."""
+
+    def test_concurrent_mark_user_present_does_not_lose_increments(self):
+        """Test simultaneous present calls for one user each count exactly once."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = meeting.room
+
+        worker_count = 5
+        start_barrier = threading.Barrier(worker_count)
+        errors = []
+
+        def worker():
+            start_barrier.wait()
+            try:
+                mark_user_present(room, organizer)
+            except Exception as exc:  # pragma: no cover - reported via errors
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker) for _ in range(worker_count)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(errors, [])
+        presence = RoomPresence.objects.get(room=room, user=organizer)
+        self.assertEqual(presence.connection_count, worker_count)
+
+    def test_concurrent_mark_user_absent_does_not_lose_decrements(self):
+        """Test simultaneous absent calls each drop the count exactly once."""
+        organizer = utils.create_user()
+        meeting = utils.create_meeting(organizer=organizer)
+        room = meeting.room
+
+        worker_count = 5
+        RoomPresence.objects.create(
+            room=room, user=organizer, connection_count=worker_count
+        )
+
+        start_barrier = threading.Barrier(worker_count)
+        errors = []
+
+        def worker():
+            start_barrier.wait()
+            try:
+                mark_user_absent(room, organizer)
+            except Exception as exc:  # pragma: no cover - reported via errors
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=worker) for _ in range(worker_count)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        self.assertEqual(errors, [])
+        self.assertFalse(
+            RoomPresence.objects.filter(room=room, user=organizer).exists()
+        )
 
 
 class RoomUnreadCountTests(TestCase):

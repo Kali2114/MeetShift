@@ -6,6 +6,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- Room presence tracking now runs inside an atomic transaction with row-level
+  locking, so concurrent WebSocket connects and disconnects for the same user
+  (multiple browser tabs, or a reconnect racing a disconnect) can no longer lose
+  presence-count updates and leave a user wrongly shown as online or offline.
+
 ### Planned for v3.0.0 — AI Meeting Assistant
 
 #### AI assistant
