@@ -238,6 +238,24 @@ class SignalTests(TestCase):
         mock_get_channel_layer.assert_not_called()
         mock_async_to_sync.assert_not_called()
 
+    def test_room_message_update_does_not_send_websocket_event(self):
+        """Test updating an existing room message sends no WebSocket event."""
+        organizer = utils.create_user(name="test_name1", email="organizer@example.com")
+        meeting = utils.create_meeting(organizer=organizer)
+        room_message = utils.create_room_message(
+            room=meeting.room, sender=organizer, content="hi"
+        )
+
+        with (
+            patch("core.signals.get_channel_layer") as mock_get_channel_layer,
+            patch("core.signals.async_to_sync") as mock_async_to_sync,
+        ):
+            room_message.content = "edited"
+            room_message.save()
+
+        mock_get_channel_layer.assert_not_called()
+        mock_async_to_sync.assert_not_called()
+
     @patch("core.signals.async_to_sync")
     @patch("core.signals.get_channel_layer")
     def test_message_creation_sends_websocket_event_to_recipient_only(
