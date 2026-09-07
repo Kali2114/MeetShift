@@ -273,6 +273,22 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(meeting.organizer, self.user)
         self.assertRedirects(res, get_meeting_invite_url(meeting.id))
 
+    @patch("core.signals.Room.objects.create", side_effect=RuntimeError("boom"))
+    def test_create_meeting_rolls_back_when_room_creation_fails(self, _mock_create):
+        """Test a room-creation failure leaves no orphaned meeting."""
+        started_at = timezone.now()
+        payload = {
+            "title": "orphan_title",
+            "description": "test_description",
+            "started_at": started_at,
+            "ended_at": started_at + timedelta(hours=1),
+        }
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(MEETING_CREATE_URL, payload)
+
+        self.assertFalse(Meeting.objects.filter(title="orphan_title").exists())
+
     def test_edit_meeting_by_organizer(self):
         """Test edit meeting by organizer successful."""
         meeting = utils.create_meeting(organizer=self.user)

@@ -22,6 +22,9 @@ All notable changes to this project will be documented in this file.
 - Sending a direct message or a room message now writes the message and its
   recipient notifications in a single atomic transaction, so a failure while
   creating the notifications no longer leaves the message stored without them.
+- Registering a user and creating a meeting now wrap the follow-up profile
+  and room creation in the same atomic transaction, so a failure there rolls
+  the user or meeting back instead of leaving it orphaned.
 
 ### Planned for v3.0.0 — AI Meeting Assistant
 

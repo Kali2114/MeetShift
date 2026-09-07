@@ -44,7 +44,9 @@ class RegisterView(CreateView):
 
     def form_valid(self, form):
         """Create inactive user and send activation email."""
-        response = super().form_valid(form)
+        with transaction.atomic():
+            response = super().form_valid(form)
+
         activation_link = build_activation_link(self.request, self.object)
         send_activation_email_task.delay(self.object.email, activation_link)
 

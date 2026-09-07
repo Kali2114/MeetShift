@@ -104,7 +104,8 @@ class CreateMeetingView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         """Set organizer as current user."""
         form.instance.organizer = self.request.user
-        response = super().form_valid(form)
+        with transaction.atomic():
+            response = super().form_valid(form)
 
         logger.info(
             "Meeting created: meeting_id=%s organizer_id=%s organizer_email=%s",

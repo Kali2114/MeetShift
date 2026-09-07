@@ -306,6 +306,9 @@ Passwords, tokens and complete login credentials are never written to applicatio
 - Direct messages and room messages are written together with their recipient
   notifications in a single transaction, so a message is never stored without
   the notifications that belong with it.
+- Creating a user or a meeting commits the row together with the profile or
+  room that its post-save signal creates, so a signal failure cannot leave an
+  orphaned user or meeting.
 
 ---
 
