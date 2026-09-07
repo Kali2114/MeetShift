@@ -12,6 +12,7 @@ from core.tests import utils
 from django.contrib.messages import get_messages
 from django.db import connection
 from django.test import Client, TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import room_unread_count, sender_color
@@ -1019,6 +1020,22 @@ class PrivateMeetingViewsTests(TestCase):
         listed_meeting = res.context["meetings"][0]
         self.assertEqual(listed_meeting.room_unread_count, 1)
         self.assertContains(res, '<span class="notification-badge">1</span>')
+
+    def test_meeting_list_does_not_query_the_room_per_meeting(self):
+        """Test the meeting list fetches each meeting's room via a join, not N+1."""
+        utils.create_meeting(organizer=self.user, title="solo")
+        with CaptureQueriesContext(connection) as one_meeting:
+            self.client.get(MEETING_LIST_URL)
+
+        for i in range(3):
+            utils.create_meeting(organizer=self.user, title=f"extra{i}")
+        with CaptureQueriesContext(connection) as four_meetings:
+            self.client.get(MEETING_LIST_URL)
+
+        # The 3 extra meetings may only add room_unread_count's own queries
+        # (an unread message count and a read-state lookup), not a third
+        # query per meeting to load meeting.room itself.
+        self.assertLessEqual(len(four_meetings) - len(one_meeting), 3 * 2)
 
 
 class AcceptInvitationConcurrencyTests(TransactionTestCase):

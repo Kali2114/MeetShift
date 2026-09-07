@@ -26,6 +26,12 @@ All notable changes to this project will be documented in this file.
   and room creation in the same atomic transaction, so a failure there rolls
   the user or meeting back instead of leaving it orphaned.
 
+### Changed
+
+- The meeting list and meeting detail views load each meeting's room in the
+  same query as the meeting (`select_related`) instead of issuing one extra
+  query per meeting.
+
 ### Planned for v3.0.0 — AI Meeting Assistant
 
 #### AI assistant

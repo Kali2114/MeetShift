@@ -21,7 +21,7 @@ RESPONDED_STATUSES = ("ACC", "DEC")
 def user_meetings_queryset(user):
     return (
         Meeting.objects.filter(Q(organizer=user) | Q(participants__user=user))
-        .select_related("organizer")
+        .select_related("organizer", "room")
         .prefetch_related(
             "participants", "participants__user", "participants__user__user_profile"
         )
