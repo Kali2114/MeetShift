@@ -2,6 +2,7 @@
 Tests for meeting views.
 """
 
+import threading
 from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
@@ -9,7 +10,8 @@ from unittest.mock import patch
 from core.models import Meeting, Notification, RoomMessage
 from core.tests import utils
 from django.contrib.messages import get_messages
-from django.test import Client, TestCase
+from django.db import connection
+from django.test import Client, TestCase, TransactionTestCase
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import room_unread_count, sender_color
@@ -982,3 +984,59 @@ class PrivateMeetingViewsTests(TestCase):
         listed_meeting = res.context["meetings"][0]
         self.assertEqual(listed_meeting.room_unread_count, 1)
         self.assertContains(res, '<span class="notification-badge">1</span>')
+
+
+class AcceptInvitationConcurrencyTests(TransactionTestCase):
+    """Concurrency regression tests for accepting meeting invitations."""
+
+    def test_concurrent_accepts_of_overlapping_invitations_reject_one(self):
+        """Test two racing accepts of overlapping invitations accept only one."""
+        user = utils.create_user(email="race@example.com", name="race-user")
+        organizer = utils.create_user(email="race-org@example.com", name="race-org")
+
+        start = timezone.now()
+        end = start + timedelta(hours=1)
+        meeting_a = utils.create_meeting(
+            organizer=organizer, started_at=start, ended_at=end
+        )
+        meeting_b = utils.create_meeting(
+            organizer=organizer,
+            started_at=start + timedelta(minutes=30),
+            ended_at=end + timedelta(minutes=30),
+        )
+        invitation_a = utils.create_meeting_participant(meeting=meeting_a, user=user)
+        invitation_b = utils.create_meeting_participant(meeting=meeting_b, user=user)
+
+        client_a, client_b = Client(), Client()
+        client_a.force_login(user)
+        client_b.force_login(user)
+
+        start_barrier = threading.Barrier(2)
+        errors = []
+
+        def accept(client, invitation_id):
+            start_barrier.wait()
+            try:
+                client.post(get_accept_invitation_url(invitation_id))
+            except Exception as exc:  # pragma: no cover - reported via errors
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [
+            threading.Thread(target=accept, args=(client_a, invitation_a.id)),
+            threading.Thread(target=accept, args=(client_b, invitation_b.id)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        invitation_a.refresh_from_db()
+        invitation_b.refresh_from_db()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            sorted([invitation_a.invitation_status, invitation_b.invitation_status]),
+            ["ACC", "PND"],
+        )

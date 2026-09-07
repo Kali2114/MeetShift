@@ -16,6 +16,9 @@ All notable changes to this project will be documented in this file.
   transaction, and each invitation email is dispatched only after that
   transaction commits, so a failure partway through no longer leaves some
   participants invited and emailed while the rest are not.
+- Accepting a meeting invitation now takes a per-user lock while it checks
+  for time conflicts, so two invitations for overlapping meetings accepted
+  at the same moment can no longer both succeed and double-book the user.
 
 ### Planned for v3.0.0 — AI Meeting Assistant
 

@@ -5,7 +5,7 @@ Views for meeting app.
 import logging
 from functools import partial
 
-from core.models import Meeting, MeetingParticipant, RoomMessage
+from core.models import Meeting, MeetingParticipant, RoomMessage, User
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
@@ -208,32 +208,40 @@ class AcceptInvitationView(LoginRequiredMixin, View):
     """Accept invitation view."""
 
     def post(self, request, *args, **kwargs):
-        """Accept current user invitation."""
-        invitation = get_object_or_404(
-            MeetingParticipant,
-            id=self.kwargs["pk"],
-            user=request.user,
-        )
-        if user_has_meeting_conflict(request.user, invitation.meeting):
-            logger.warning(
-                "Invitation accept blocked by conflict: meeting_id=%s "
-                "user_id=%s invitation_id=%s",
+        """Accept the current user's invitation, rejecting time conflicts."""
+        with transaction.atomic():
+            # Serialise this user's concurrent accepts: without the lock, two
+            # requests accepting overlapping invitations at the same time could
+            # both pass the conflict check below and leave the user double-booked.
+            User.objects.select_for_update().get(pk=request.user.pk)
+
+            invitation = get_object_or_404(
+                MeetingParticipant.objects.select_related("meeting"),
+                id=self.kwargs["pk"],
+                user=request.user,
+            )
+
+            if user_has_meeting_conflict(request.user, invitation.meeting):
+                logger.warning(
+                    "Invitation accept blocked by conflict: meeting_id=%s "
+                    "user_id=%s invitation_id=%s",
+                    invitation.meeting.id,
+                    request.user.id,
+                    invitation.id,
+                )
+                messages.error(
+                    request, "You already have another accepted meeting at this time."
+                )
+                return redirect(request.POST.get("next", "meeting:invitations"))
+
+            invitation.invitation_status = "ACC"
+            invitation.save()
+            logger.info(
+                "Invitation accepted: meeting_id=%s user_id=%s invitation_id=%s",
                 invitation.meeting.id,
                 request.user.id,
                 invitation.id,
             )
-            messages.error(
-                request, "You already have another accepted meeting at this time."
-            )
-            return redirect(request.POST.get("next", "meeting:invitations"))
-        invitation.invitation_status = "ACC"
-        invitation.save()
-        logger.info(
-            "Invitation accepted: meeting_id=%s user_id=%s invitation_id=%s",
-            invitation.meeting.id,
-            request.user.id,
-            invitation.id,
-        )
 
         return redirect(request.POST.get("next", "meeting:invitations"))
 

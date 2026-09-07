@@ -300,6 +300,9 @@ Passwords, tokens and complete login credentials are never written to applicatio
 - Inviting participants runs as a single atomic transaction, and invitation
   emails are queued only after it commits, so a partial failure never leaves
   some participants invited and emailed and the rest not.
+- Accepting an invitation locks the user's row while checking for time
+  conflicts, so concurrent accepts of overlapping meetings cannot both
+  succeed and double-book the user.
 
 ---
 
