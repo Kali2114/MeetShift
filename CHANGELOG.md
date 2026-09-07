@@ -12,6 +12,10 @@ All notable changes to this project will be documented in this file.
   locking, so concurrent WebSocket connects and disconnects for the same user
   (multiple browser tabs, or a reconnect racing a disconnect) can no longer lose
   presence-count updates and leave a user wrongly shown as online or offline.
+- Inviting participants to a meeting now runs inside a single atomic
+  transaction, and each invitation email is dispatched only after that
+  transaction commits, so a failure partway through no longer leaves some
+  participants invited and emailed while the rest are not.
 
 ### Planned for v3.0.0 — AI Meeting Assistant
 

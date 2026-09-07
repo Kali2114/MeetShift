@@ -297,6 +297,9 @@ Passwords, tokens and complete login credentials are never written to applicatio
 - Room presence tracking runs inside atomic database transactions with row-level
   locking, so concurrent WebSocket connects and disconnects for the same user
   (for example, multiple browser tabs) cannot lose presence-count updates.
+- Inviting participants runs as a single atomic transaction, and invitation
+  emails are queued only after it commits, so a partial failure never leaves
+  some participants invited and emailed and the rest not.
 
 ---
 

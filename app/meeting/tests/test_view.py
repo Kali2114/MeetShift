@@ -598,13 +598,14 @@ class PrivateMeetingViewsTests(TestCase):
 
     @patch("meeting.views.send_invitation_email_task.delay")
     def test_invite_participant_sends_email_task(self, mock_send_email_task):
-        """Test invite participant starts async invitation email task."""
+        """Test invite participant starts async invitation email task on commit."""
         meeting = utils.create_meeting(organizer=self.user)
         payload = {
             "users": [self.participant.id],
         }
 
-        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(get_meeting_invite_url(meeting.id), payload)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         mock_send_email_task.assert_called_once_with(
@@ -624,10 +625,35 @@ class PrivateMeetingViewsTests(TestCase):
             "users": [self.participant.id, second_participant.id],
         }
 
-        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(get_meeting_invite_url(meeting.id), payload)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(mock_send_email_task.call_count, 2)
+
+    @patch("meeting.views.send_invitation_email_task.delay")
+    @patch("meeting.views.MeetingParticipant.objects.create")
+    def test_invite_participants_rolls_back_on_error(
+        self, mock_create, mock_send_email_task
+    ):
+        """Test a failure mid-loop invites nobody and queues no email."""
+        meeting = utils.create_meeting(organizer=self.user)
+        second_participant = utils.create_user(
+            name="second_participant",
+            email="second@example.com",
+        )
+        mock_create.side_effect = [object(), RuntimeError("boom")]
+        payload = {
+            "users": [self.participant.id, second_participant.id],
+        }
+
+        with self.assertRaises(RuntimeError):
+            with self.captureOnCommitCallbacks(execute=True):
+                self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertFalse(meeting.participants.exists())
+        self.assertFalse(Notification.objects.filter(meeting=meeting).exists())
+        mock_send_email_task.assert_not_called()
 
     def test_room_detail_requires_login(self):
         """Test room detail page requires login."""

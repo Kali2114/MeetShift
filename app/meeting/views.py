@@ -3,11 +3,13 @@ Views for meeting app.
 """
 
 import logging
+from functools import partial
 
 from core.models import Meeting, MeetingParticipant, RoomMessage
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
@@ -161,30 +163,37 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """Invite user to meeting."""
+        """Invite users to the meeting as a single all-or-nothing operation."""
         invited_users = form.cleaned_data["users"]
 
-        for user in invited_users:
-            MeetingParticipant.objects.create(
-                meeting=self.meeting,
-                user=user,
-            )
-            create_notification(
-                meeting=self.meeting,
-                user=user,
-                message=f"You have been invited to meeting: {self.meeting}",
-            )
+        with transaction.atomic():
+            for user in invited_users:
+                MeetingParticipant.objects.create(
+                    meeting=self.meeting,
+                    user=user,
+                )
+                create_notification(
+                    meeting=self.meeting,
+                    user=user,
+                    message=f"You have been invited to meeting: {self.meeting}",
+                )
 
-            send_invitation_email_task.delay(user.email, self.meeting.title)
+                transaction.on_commit(
+                    partial(
+                        send_invitation_email_task.delay,
+                        user.email,
+                        self.meeting.title,
+                    )
+                )
 
-            logger.info(
-                "User invited to meeting: meeting_id=%s organizer_id=%s "
-                "invited_user_id=%s invited_user_email=%s",
-                self.meeting.id,
-                self.request.user.id,
-                user.id,
-                user.email,
-            )
+                logger.info(
+                    "User invited to meeting: meeting_id=%s organizer_id=%s "
+                    "invited_user_id=%s invited_user_email=%s",
+                    self.meeting.id,
+                    self.request.user.id,
+                    user.id,
+                    user.email,
+                )
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
 
