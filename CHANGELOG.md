@@ -19,6 +19,9 @@ All notable changes to this project will be documented in this file.
 - Accepting a meeting invitation now takes a per-user lock while it checks
   for time conflicts, so two invitations for overlapping meetings accepted
   at the same moment can no longer both succeed and double-book the user.
+- Sending a direct message or a room message now writes the message and its
+  recipient notifications in a single atomic transaction, so a failure while
+  creating the notifications no longer leaves the message stored without them.
 
 ### Planned for v3.0.0 — AI Meeting Assistant
 

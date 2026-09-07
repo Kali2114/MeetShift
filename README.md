@@ -303,6 +303,9 @@ Passwords, tokens and complete login credentials are never written to applicatio
 - Accepting an invitation locks the user's row while checking for time
   conflicts, so concurrent accepts of overlapping meetings cannot both
   succeed and double-book the user.
+- Direct messages and room messages are written together with their recipient
+  notifications in a single transaction, so a message is never stored without
+  the notifications that belong with it.
 
 ---
 

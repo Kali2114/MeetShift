@@ -916,6 +916,25 @@ class PrivateMeetingViewsTests(TestCase):
             Notification.objects.filter(user=self.user, meeting=meeting).exists()
         )
 
+    @patch("meeting.views.create_notification", side_effect=RuntimeError("boom"))
+    def test_send_room_message_rolls_back_when_notification_fails(self, _mock_notify):
+        """Test a notification failure rolls back the room message write too."""
+        meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(
+                get_room_message_send_url(meeting.id), {"content": "Hello!"}
+            )
+
+        self.assertFalse(RoomMessage.objects.exists())
+
     def test_send_room_message_does_not_notify_when_form_invalid(self):
         """Test an empty room message does not create any notifications."""
         meeting = utils.create_meeting(

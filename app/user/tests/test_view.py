@@ -804,6 +804,20 @@ class PrivateUserViewsTests(TestCase):
             ).exists()
         )
 
+    @patch("user.views.create_notification", side_effect=RuntimeError("boom"))
+    def test_send_message_rolls_back_when_notification_fails(self, _mock_notify):
+        """Test a notification failure rolls back the message write too."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(
+                reverse("user:message-send", args=[conversation.id]),
+                {"content": "Hello!"},
+            )
+
+        self.assertFalse(Message.objects.filter(conversation=conversation).exists())
+
     def test_send_message_denies_non_participant(self):
         """Test sending a message to a conversation you're not part of fails."""
         other_user1 = utils.create_user(name="other1", email="other1@example.com")

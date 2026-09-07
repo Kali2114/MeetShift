@@ -9,6 +9,7 @@ from core.tasks import send_activation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.tokens import default_token_generator
+from django.db import transaction
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
@@ -299,18 +300,19 @@ class SendMessageView(LoginRequiredMixin, View):
         form = MessageForm(request.POST)
 
         if form.is_valid():
-            Message.objects.create(
-                conversation=conversation,
-                sender=request.user,
-                content=form.cleaned_data["content"],
-            )
+            with transaction.atomic():
+                Message.objects.create(
+                    conversation=conversation,
+                    sender=request.user,
+                    content=form.cleaned_data["content"],
+                )
 
-            recipient = conversation.other_participant(request.user)
-            create_notification(
-                user=recipient,
-                conversation=conversation,
-                message=f"New message from {request.user.name}",
-            )
+                recipient = conversation.other_participant(request.user)
+                create_notification(
+                    user=recipient,
+                    conversation=conversation,
+                    message=f"New message from {request.user.name}",
+                )
 
             logger.info(
                 "Message sent: conversation_id=%s sender_id=%s",

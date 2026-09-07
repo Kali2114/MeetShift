@@ -316,18 +316,22 @@ class SendRoomMessageView(LoginRequiredMixin, View):
         form = RoomMessageForm(request.POST)
 
         if form.is_valid():
-            RoomMessage.objects.create(
-                room=meeting.room,
-                sender=request.user,
-                content=form.cleaned_data["content"],
-            )
-
-            for recipient in room_notification_recipients(meeting, request.user):
-                create_notification(
-                    user=recipient,
-                    meeting=meeting,
-                    message=f"New message from {request.user.name} in {meeting.title}",
+            with transaction.atomic():
+                RoomMessage.objects.create(
+                    room=meeting.room,
+                    sender=request.user,
+                    content=form.cleaned_data["content"],
                 )
+
+                for recipient in room_notification_recipients(meeting, request.user):
+                    create_notification(
+                        user=recipient,
+                        meeting=meeting,
+                        message=(
+                            f"New message from {request.user.name} "
+                            f"in {meeting.title}"
+                        ),
+                    )
 
             logger.info(
                 "Room message sent: meeting_id=%s sender_id=%s",
