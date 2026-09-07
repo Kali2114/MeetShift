@@ -3,11 +3,13 @@ Views for meeting app.
 """
 
 import logging
+from functools import partial
 
-from core.models import Meeting, MeetingParticipant, RoomMessage
+from core.models import Meeting, MeetingParticipant, RoomMessage, User
 from core.tasks import send_invitation_email_task
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
+from django.db import transaction
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse, reverse_lazy
 from django.views.generic import (
@@ -102,7 +104,8 @@ class CreateMeetingView(LoginRequiredMixin, CreateView):
     def form_valid(self, form):
         """Set organizer as current user."""
         form.instance.organizer = self.request.user
-        response = super().form_valid(form)
+        with transaction.atomic():
+            response = super().form_valid(form)
 
         logger.info(
             "Meeting created: meeting_id=%s organizer_id=%s organizer_email=%s",
@@ -161,30 +164,37 @@ class InviteParticipantView(LoginRequiredMixin, FormView):
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
-        """Invite user to meeting."""
+        """Invite users to the meeting as a single all-or-nothing operation."""
         invited_users = form.cleaned_data["users"]
 
-        for user in invited_users:
-            MeetingParticipant.objects.create(
-                meeting=self.meeting,
-                user=user,
-            )
-            create_notification(
-                meeting=self.meeting,
-                user=user,
-                message=f"You have been invited to meeting: {self.meeting}",
-            )
+        with transaction.atomic():
+            for user in invited_users:
+                MeetingParticipant.objects.create(
+                    meeting=self.meeting,
+                    user=user,
+                )
+                create_notification(
+                    meeting=self.meeting,
+                    user=user,
+                    message=f"You have been invited to meeting: {self.meeting}",
+                )
 
-            send_invitation_email_task.delay(user.email, self.meeting.title)
+                transaction.on_commit(
+                    partial(
+                        send_invitation_email_task.delay,
+                        user.email,
+                        self.meeting.title,
+                    )
+                )
 
-            logger.info(
-                "User invited to meeting: meeting_id=%s organizer_id=%s "
-                "invited_user_id=%s invited_user_email=%s",
-                self.meeting.id,
-                self.request.user.id,
-                user.id,
-                user.email,
-            )
+                logger.info(
+                    "User invited to meeting: meeting_id=%s organizer_id=%s "
+                    "invited_user_id=%s invited_user_email=%s",
+                    self.meeting.id,
+                    self.request.user.id,
+                    user.id,
+                    user.email,
+                )
 
         return redirect("meeting:detail-meeting", pk=self.meeting.id)
 
@@ -199,32 +209,40 @@ class AcceptInvitationView(LoginRequiredMixin, View):
     """Accept invitation view."""
 
     def post(self, request, *args, **kwargs):
-        """Accept current user invitation."""
-        invitation = get_object_or_404(
-            MeetingParticipant,
-            id=self.kwargs["pk"],
-            user=request.user,
-        )
-        if user_has_meeting_conflict(request.user, invitation.meeting):
-            logger.warning(
-                "Invitation accept blocked by conflict: meeting_id=%s "
-                "user_id=%s invitation_id=%s",
+        """Accept the current user's invitation, rejecting time conflicts."""
+        with transaction.atomic():
+            # Serialise this user's concurrent accepts: without the lock, two
+            # requests accepting overlapping invitations at the same time could
+            # both pass the conflict check below and leave the user double-booked.
+            User.objects.select_for_update().get(pk=request.user.pk)
+
+            invitation = get_object_or_404(
+                MeetingParticipant.objects.select_related("meeting"),
+                id=self.kwargs["pk"],
+                user=request.user,
+            )
+
+            if user_has_meeting_conflict(request.user, invitation.meeting):
+                logger.warning(
+                    "Invitation accept blocked by conflict: meeting_id=%s "
+                    "user_id=%s invitation_id=%s",
+                    invitation.meeting.id,
+                    request.user.id,
+                    invitation.id,
+                )
+                messages.error(
+                    request, "You already have another accepted meeting at this time."
+                )
+                return redirect(request.POST.get("next", "meeting:invitations"))
+
+            invitation.invitation_status = "ACC"
+            invitation.save()
+            logger.info(
+                "Invitation accepted: meeting_id=%s user_id=%s invitation_id=%s",
                 invitation.meeting.id,
                 request.user.id,
                 invitation.id,
             )
-            messages.error(
-                request, "You already have another accepted meeting at this time."
-            )
-            return redirect(request.POST.get("next", "meeting:invitations"))
-        invitation.invitation_status = "ACC"
-        invitation.save()
-        logger.info(
-            "Invitation accepted: meeting_id=%s user_id=%s invitation_id=%s",
-            invitation.meeting.id,
-            request.user.id,
-            invitation.id,
-        )
 
         return redirect(request.POST.get("next", "meeting:invitations"))
 
@@ -299,18 +317,22 @@ class SendRoomMessageView(LoginRequiredMixin, View):
         form = RoomMessageForm(request.POST)
 
         if form.is_valid():
-            RoomMessage.objects.create(
-                room=meeting.room,
-                sender=request.user,
-                content=form.cleaned_data["content"],
-            )
-
-            for recipient in room_notification_recipients(meeting, request.user):
-                create_notification(
-                    user=recipient,
-                    meeting=meeting,
-                    message=f"New message from {request.user.name} in {meeting.title}",
+            with transaction.atomic():
+                RoomMessage.objects.create(
+                    room=meeting.room,
+                    sender=request.user,
+                    content=form.cleaned_data["content"],
                 )
+
+                for recipient in room_notification_recipients(meeting, request.user):
+                    create_notification(
+                        user=recipient,
+                        meeting=meeting,
+                        message=(
+                            f"New message from {request.user.name} "
+                            f"in {meeting.title}"
+                        ),
+                    )
 
             logger.info(
                 "Room message sent: meeting_id=%s sender_id=%s",

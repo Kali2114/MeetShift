@@ -2,6 +2,7 @@
 Tests for meeting views.
 """
 
+import threading
 from datetime import timedelta
 from http import HTTPStatus
 from unittest.mock import patch
@@ -9,7 +10,9 @@ from unittest.mock import patch
 from core.models import Meeting, Notification, RoomMessage
 from core.tests import utils
 from django.contrib.messages import get_messages
-from django.test import Client, TestCase
+from django.db import connection
+from django.test import Client, TestCase, TransactionTestCase
+from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 from django.utils import timezone
 from meeting.utils import room_unread_count, sender_color
@@ -270,6 +273,22 @@ class PrivateMeetingViewsTests(TestCase):
         self.assertEqual(meeting.description, payload["description"])
         self.assertEqual(meeting.organizer, self.user)
         self.assertRedirects(res, get_meeting_invite_url(meeting.id))
+
+    @patch("core.signals.Room.objects.create", side_effect=RuntimeError("boom"))
+    def test_create_meeting_rolls_back_when_room_creation_fails(self, _mock_create):
+        """Test a room-creation failure leaves no orphaned meeting."""
+        started_at = timezone.now()
+        payload = {
+            "title": "orphan_title",
+            "description": "test_description",
+            "started_at": started_at,
+            "ended_at": started_at + timedelta(hours=1),
+        }
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(MEETING_CREATE_URL, payload)
+
+        self.assertFalse(Meeting.objects.filter(title="orphan_title").exists())
 
     def test_edit_meeting_by_organizer(self):
         """Test edit meeting by organizer successful."""
@@ -598,13 +617,14 @@ class PrivateMeetingViewsTests(TestCase):
 
     @patch("meeting.views.send_invitation_email_task.delay")
     def test_invite_participant_sends_email_task(self, mock_send_email_task):
-        """Test invite participant starts async invitation email task."""
+        """Test invite participant starts async invitation email task on commit."""
         meeting = utils.create_meeting(organizer=self.user)
         payload = {
             "users": [self.participant.id],
         }
 
-        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(get_meeting_invite_url(meeting.id), payload)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         mock_send_email_task.assert_called_once_with(
@@ -624,10 +644,35 @@ class PrivateMeetingViewsTests(TestCase):
             "users": [self.participant.id, second_participant.id],
         }
 
-        res = self.client.post(get_meeting_invite_url(meeting.id), payload)
+        with self.captureOnCommitCallbacks(execute=True):
+            res = self.client.post(get_meeting_invite_url(meeting.id), payload)
 
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         self.assertEqual(mock_send_email_task.call_count, 2)
+
+    @patch("meeting.views.send_invitation_email_task.delay")
+    @patch("meeting.views.MeetingParticipant.objects.create")
+    def test_invite_participants_rolls_back_on_error(
+        self, mock_create, mock_send_email_task
+    ):
+        """Test a failure mid-loop invites nobody and queues no email."""
+        meeting = utils.create_meeting(organizer=self.user)
+        second_participant = utils.create_user(
+            name="second_participant",
+            email="second@example.com",
+        )
+        mock_create.side_effect = [object(), RuntimeError("boom")]
+        payload = {
+            "users": [self.participant.id, second_participant.id],
+        }
+
+        with self.assertRaises(RuntimeError):
+            with self.captureOnCommitCallbacks(execute=True):
+                self.client.post(get_meeting_invite_url(meeting.id), payload)
+
+        self.assertFalse(meeting.participants.exists())
+        self.assertFalse(Notification.objects.filter(meeting=meeting).exists())
+        mock_send_email_task.assert_not_called()
 
     def test_room_detail_requires_login(self):
         """Test room detail page requires login."""
@@ -888,6 +933,25 @@ class PrivateMeetingViewsTests(TestCase):
             Notification.objects.filter(user=self.user, meeting=meeting).exists()
         )
 
+    @patch("meeting.views.create_notification", side_effect=RuntimeError("boom"))
+    def test_send_room_message_rolls_back_when_notification_fails(self, _mock_notify):
+        """Test a notification failure rolls back the room message write too."""
+        meeting = utils.create_meeting(
+            organizer=self.organizer,
+            started_at=timezone.now() - timedelta(minutes=5),
+            ended_at=timezone.now() + timedelta(minutes=30),
+        )
+        utils.create_meeting_participant(
+            meeting=meeting, user=self.user, invitation_status="ACC"
+        )
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(
+                get_room_message_send_url(meeting.id), {"content": "Hello!"}
+            )
+
+        self.assertFalse(RoomMessage.objects.exists())
+
     def test_send_room_message_does_not_notify_when_form_invalid(self):
         """Test an empty room message does not create any notifications."""
         meeting = utils.create_meeting(
@@ -956,3 +1020,75 @@ class PrivateMeetingViewsTests(TestCase):
         listed_meeting = res.context["meetings"][0]
         self.assertEqual(listed_meeting.room_unread_count, 1)
         self.assertContains(res, '<span class="notification-badge">1</span>')
+
+    def test_meeting_list_does_not_query_the_room_per_meeting(self):
+        """Test the meeting list fetches each meeting's room via a join, not N+1."""
+        utils.create_meeting(organizer=self.user, title="solo")
+        with CaptureQueriesContext(connection) as one_meeting:
+            self.client.get(MEETING_LIST_URL)
+
+        for i in range(3):
+            utils.create_meeting(organizer=self.user, title=f"extra{i}")
+        with CaptureQueriesContext(connection) as four_meetings:
+            self.client.get(MEETING_LIST_URL)
+
+        # The 3 extra meetings may only add room_unread_count's own queries
+        # (an unread message count and a read-state lookup), not a third
+        # query per meeting to load meeting.room itself.
+        self.assertLessEqual(len(four_meetings) - len(one_meeting), 3 * 2)
+
+
+class AcceptInvitationConcurrencyTests(TransactionTestCase):
+    """Concurrency regression tests for accepting meeting invitations."""
+
+    def test_concurrent_accepts_of_overlapping_invitations_reject_one(self):
+        """Test two racing accepts of overlapping invitations accept only one."""
+        user = utils.create_user(email="race@example.com", name="race-user")
+        organizer = utils.create_user(email="race-org@example.com", name="race-org")
+
+        start = timezone.now()
+        end = start + timedelta(hours=1)
+        meeting_a = utils.create_meeting(
+            organizer=organizer, started_at=start, ended_at=end
+        )
+        meeting_b = utils.create_meeting(
+            organizer=organizer,
+            started_at=start + timedelta(minutes=30),
+            ended_at=end + timedelta(minutes=30),
+        )
+        invitation_a = utils.create_meeting_participant(meeting=meeting_a, user=user)
+        invitation_b = utils.create_meeting_participant(meeting=meeting_b, user=user)
+
+        client_a, client_b = Client(), Client()
+        client_a.force_login(user)
+        client_b.force_login(user)
+
+        start_barrier = threading.Barrier(2)
+        errors = []
+
+        def accept(client, invitation_id):
+            start_barrier.wait()
+            try:
+                client.post(get_accept_invitation_url(invitation_id))
+            except Exception as exc:  # pragma: no cover - reported via errors
+                errors.append(exc)
+            finally:
+                connection.close()
+
+        threads = [
+            threading.Thread(target=accept, args=(client_a, invitation_a.id)),
+            threading.Thread(target=accept, args=(client_b, invitation_b.id)),
+        ]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+
+        invitation_a.refresh_from_db()
+        invitation_b.refresh_from_db()
+
+        self.assertEqual(errors, [])
+        self.assertEqual(
+            sorted([invitation_a.invitation_status, invitation_b.invitation_status]),
+            ["ACC", "PND"],
+        )

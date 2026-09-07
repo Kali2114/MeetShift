@@ -58,6 +58,36 @@ All notable changes to this project will be documented in this file.
 
 ---
 
+## [v2.0.1] — Transactional Integrity & Concurrency Fixes (2026-09-07)
+
+### Fixed
+
+- Room presence tracking now runs inside an atomic transaction with row-level
+  locking, so concurrent WebSocket connects and disconnects for the same user
+  (multiple browser tabs, or a reconnect racing a disconnect) can no longer lose
+  presence-count updates and leave a user wrongly shown as online or offline.
+- Inviting participants to a meeting now runs inside a single atomic
+  transaction, and each invitation email is dispatched only after that
+  transaction commits, so a failure partway through no longer leaves some
+  participants invited and emailed while the rest are not.
+- Accepting a meeting invitation now takes a per-user lock while it checks
+  for time conflicts, so two invitations for overlapping meetings accepted
+  at the same moment can no longer both succeed and double-book the user.
+- Sending a direct message or a room message now writes the message and its
+  recipient notifications in a single atomic transaction, so a failure while
+  creating the notifications no longer leaves the message stored without them.
+- Registering a user and creating a meeting now wrap the follow-up profile
+  and room creation in the same atomic transaction, so a failure there rolls
+  the user or meeting back instead of leaving it orphaned.
+
+### Changed
+
+- The meeting list and meeting detail views load each meeting's room in the
+  same query as the meeting (`select_related`) instead of issuing one extra
+  query per meeting.
+
+---
+
 ## [v2.0.0] — Real-Time Communication & Meeting Rooms (2026-07-26)
 
 ### Added

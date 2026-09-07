@@ -1,6 +1,9 @@
 FROM python:3.12-alpine
 LABEL maintainer="meetshift.com"
 
+# Patch base-image OS packages (e.g. util-linux CVE-2026-53612..78410).
+RUN apk update && apk upgrade --no-cache
+
 ARG DEV=false
 
 ENV PYTHONUNBUFFERED=1

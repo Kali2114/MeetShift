@@ -9,6 +9,7 @@ from core.models import (
     RoomReadState,
     User,
 )
+from django.db import transaction
 from django.db.models import Q
 from django.templatetags.static import static
 from django.urls import reverse
@@ -20,7 +21,7 @@ RESPONDED_STATUSES = ("ACC", "DEC")
 def user_meetings_queryset(user):
     return (
         Meeting.objects.filter(Q(organizer=user) | Q(participants__user=user))
-        .select_related("organizer")
+        .select_related("organizer", "room")
         .prefetch_related(
             "participants", "participants__user", "participants__user__user_profile"
         )
@@ -83,26 +84,30 @@ def user_accessible_room_meetings(user):
 
 def mark_user_present(room, user):
     """Record a WebSocket connection for a user in a room."""
-    presence, created = RoomPresence.objects.get_or_create(
-        room=room, user=user, defaults={"connection_count": 1}
-    )
-    if not created:
-        presence.connection_count += 1
-        presence.save(update_fields=["connection_count"])
+    with transaction.atomic():
+        presence, created = RoomPresence.objects.select_for_update().get_or_create(
+            room=room, user=user, defaults={"connection_count": 1}
+        )
+        if not created:
+            presence.connection_count += 1
+            presence.save(update_fields=["connection_count"])
 
 
 def mark_user_absent(room, user):
     """Remove one WebSocket connection for a user in a room."""
-    try:
-        presence = RoomPresence.objects.get(room=room, user=user)
-    except RoomPresence.DoesNotExist:
-        return
+    with transaction.atomic():
+        try:
+            presence = RoomPresence.objects.select_for_update().get(
+                room=room, user=user
+            )
+        except RoomPresence.DoesNotExist:
+            return
 
-    if presence.connection_count <= 1:
-        presence.delete()
-    else:
-        presence.connection_count -= 1
-        presence.save(update_fields=["connection_count"])
+        if presence.connection_count <= 1:
+            presence.delete()
+        else:
+            presence.connection_count -= 1
+            presence.save(update_fields=["connection_count"])
 
 
 def online_room_users(room):

@@ -154,6 +154,24 @@ class PublicUserViewsTests(TestCase):
         self.assertEqual(res.status_code, HTTPStatus.FOUND)
         mock_send_activation_task.assert_called_once()
 
+    @patch(
+        "core.signals.UserProfile.objects.create",
+        side_effect=RuntimeError("boom"),
+    )
+    def test_register_view_rolls_back_when_profile_creation_fails(self, _mock_create):
+        """Test a profile-creation failure leaves no orphaned user."""
+        payload = {
+            "email": "test@example.com",
+            "name": "testuser",
+            "password": "testpass123",
+            "password_confirm": "testpass123",
+        }
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(REGISTER_URL, payload)
+
+        self.assertFalse(User.objects.filter(email=payload["email"]).exists())
+
     def test_activate_account_success(self):
         """Test user account can be activated with valid token."""
         user = utils.create_user(
@@ -803,6 +821,20 @@ class PrivateUserViewsTests(TestCase):
                 meeting=None,
             ).exists()
         )
+
+    @patch("user.views.create_notification", side_effect=RuntimeError("boom"))
+    def test_send_message_rolls_back_when_notification_fails(self, _mock_notify):
+        """Test a notification failure rolls back the message write too."""
+        other_user = utils.create_user(name="other", email="other@example.com")
+        conversation = utils.create_conversation(self.user, other_user)
+
+        with self.assertRaises(RuntimeError):
+            self.client.post(
+                reverse("user:message-send", args=[conversation.id]),
+                {"content": "Hello!"},
+            )
+
+        self.assertFalse(Message.objects.filter(conversation=conversation).exists())
 
     def test_send_message_denies_non_participant(self):
         """Test sending a message to a conversation you're not part of fails."""

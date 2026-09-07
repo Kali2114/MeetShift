@@ -85,6 +85,20 @@ class UserRegisterFormTests(TestCase):
 
         self.assertFalse(form.is_valid())
 
+    def test_register_form_rejects_weak_password(self):
+        """Test a password failing Django's validators adds a password error."""
+        form = UserRegisterForm(
+            data={
+                "email": "test@example.com",
+                "name": "testuser",
+                "password": "12345678",
+                "password_confirm": "12345678",
+            }
+        )
+
+        self.assertFalse(form.is_valid())
+        self.assertIn("password", form.errors)
+
     def test_register_form_passwords_must_match(self):
         """Test form is invalid when passwords do not match."""
         form = UserRegisterForm(
