@@ -389,8 +389,10 @@ textarea {
 }
 
 .message {
-    padding: 12px;
-    margin-bottom: 20px;
+    width: 90%;
+    max-width: 1100px;
+    margin: 16px auto 0;
+    padding: 12px 16px;
     border-radius: 8px;
 }
 
