@@ -153,6 +153,31 @@ body {
     display: inline-flex;
 }
 
+@media (max-width: 820px) {
+    .logo-bar {
+        padding: 14px 0 6px;
+    }
+
+    .nav-container {
+        flex-wrap: wrap;
+        gap: 8px 16px;
+    }
+
+    .nav-links,
+    .auth-links {
+        flex-wrap: wrap;
+        gap: 14px;
+    }
+
+    .auth-links {
+        margin-left: 0;
+    }
+
+    .theme-toggle {
+        margin-left: auto;
+    }
+}
+
 .page-container {
     width: 90%;
     max-width: 1100px;
@@ -755,8 +780,9 @@ textarea {
 }
 
 .messenger-page {
-    height: calc(100vh - 380px);
+    height: calc(100dvh - 380px);
     min-height: 420px;
+    max-height: 780px;
     display: flex;
 }
 
@@ -962,8 +988,9 @@ textarea {
 
 @media (max-width: 700px) {
     .messenger-page {
-        height: calc(100vh - 260px);
+        height: calc(100dvh - 260px);
         min-height: 360px;
+        max-height: none;
     }
 
     .messenger-sidebar {
