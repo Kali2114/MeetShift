@@ -228,3 +228,4 @@ terraform/crash.log
 *.deb
 
 .claude
+.mcp.json

@@ -557,6 +557,11 @@ MeetShift/
 - Mobile viewport, wrapping navigation, list-view calendar on small screens
 - Calendar stylesheet loaded from the document head
 
+### ✅ v2.0.3 — Accessibility & metadata
+
+- Skip-to-content link and visible keyboard focus styling
+- Favicon, meta description, theme colour, and per-page titles
+
 ### 🔮 v3.0.0 — AI Meeting Assistant
 
 - Suggested meeting times from participant availability
