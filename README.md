@@ -31,13 +31,18 @@ The project demonstrates the complete lifecycle of a production backend applicat
 - User profiles with avatar uploads
 - Account and password management
 - Meeting creation, editing and deletion
-- Calendar interface
+- Calendar interface, with a list view on small screens
 - Participant invitations
-- Accepting and declining invitations
+- Accepting and declining invitations, with time-conflict detection
+- Direct messaging between users
+- Time-windowed meeting chat rooms with multi-tab presence tracking
 - E-mail notifications
 - Background tasks with Celery
 - Real-time WebSocket notifications
 - Live notification badge updates
+- WebSocket auto-reconnection with exponential backoff
+- Dark mode, following the system preference
+- Responsive, mobile-friendly layout
 - Persistent media and static files
 - HTTPS through Cloudflare
 - Automated AWS deployment
@@ -534,10 +539,29 @@ MeetShift/
 - Authentication event logging
 - Real-time WebSocket notifications
 
-### 🔮 v2.0
+### ✅ v2.0.0 — Real-time communication & meeting rooms
 
-- Chat
-- Meeting rooms
+- Direct messaging and conversations
+- Time-windowed meeting chat rooms with presence tracking
+- WebSocket reconnection with exponential backoff
+- Dark mode
+- Prometheus metrics for WebSocket connections
+
+### ✅ v2.0.1 — Transactional integrity
+
+- Atomic transactions and row-level locks across the concurrent multi-write paths
+- Docker base-image OS packages patched during build
+
+### ✅ v2.0.2 — Responsive layout
+
+- Mobile viewport, wrapping navigation, list-view calendar on small screens
+- Calendar stylesheet loaded from the document head
+
+### 🔮 v3.0.0 — AI Meeting Assistant
+
+- Suggested meeting times from participant availability
+- Meeting agendas and preparation suggestions
+- Meeting summaries with extracted decisions and action items
 - User interface redesign and polishing
 
 ---
