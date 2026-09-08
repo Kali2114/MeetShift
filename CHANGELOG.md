@@ -9,6 +9,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- The dashboard calendar on phones showed only the current week and hid days
+  with no events; it now lists the whole month.
+
 ### Planned for v3.0.0 — AI Meeting Assistant
 
 #### AI assistant
