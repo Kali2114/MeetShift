@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 
+{% block extra_head %}
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+{% endblock %}
+
 {% block content %}
     <section class="dashboard-header">
         <h1>MeetShift Dashboard</h1>
@@ -11,8 +15,9 @@
     </section>
 
     {{ calendar_events|json_script:"calendar-events-data" }}
+{% endblock %}
 
-    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
+{% block extra_js %}
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
 
     <script>
@@ -22,11 +27,22 @@
                 document.getElementById("calendar-events-data").textContent
             );
 
+            const narrowQuery = window.matchMedia("(max-width: 700px)");
+            const viewForWidth = function () {
+                return narrowQuery.matches ? "listWeek" : "dayGridMonth";
+            };
+
             const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: "dayGridMonth",
+                initialView: viewForWidth(),
                 height: "auto",
                 timeZone: "local",
                 events: events,
+                windowResize: function () {
+                    const target = viewForWidth();
+                    if (calendar.view.type !== target) {
+                        calendar.changeView(target);
+                    }
+                },
                 eventContent: function (arg) {
                     const participants = arg.event.extendedProps.participants || [];
                     const extraCount = arg.event.extendedProps.extra_count || 0;

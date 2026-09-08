@@ -1,6 +1,9 @@
 # Changelog
 
-All notable changes to this project will be documented in this file.
+All notable changes to this project are documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
@@ -55,6 +58,25 @@ All notable changes to this project will be documented in this file.
 - Audit logging for AI actions.
 - Rate limiting and usage monitoring.
 - Fallback behavior when AI services are unavailable.
+
+---
+
+## [v2.0.2] — Responsive Layout Fixes (2026-09-08)
+
+### Fixed
+
+- Added the viewport meta tag; phones now render the page at their own width
+  instead of a scaled-down desktop.
+- The header navigation wraps below 820px instead of overflowing the viewport
+  on tablet and phone.
+- The messenger panel height uses dynamic viewport units and a maximum height,
+  so it is no longer thrown off by a wrapped header or an oversized monitor.
+- The dashboard calendar stylesheet loads from the document head, so the
+  calendar no longer renders unstyled for a moment on load.
+- The dashboard calendar switches to a list view below 700px, where the month
+  grid was unreadable.
+- Flash messages align with the page content width instead of spanning the full
+  viewport.
 
 ---
 
