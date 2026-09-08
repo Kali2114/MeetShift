@@ -61,6 +61,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v2.0.3] — Accessibility & Metadata (2026-09-08)
+
+### Added
+
+- A skip-to-content link and a visible `:focus-visible` outline for keyboard
+  navigation.
+- A favicon.
+- `<meta name="description">` and a `theme-color` meta tag.
+- Per-page `<title>` on the main pages, via a `title` template block in the
+  base layout.
+
+---
+
 ## [v2.0.2] — Responsive Layout Fixes (2026-09-08)
 
 ### Fixed
