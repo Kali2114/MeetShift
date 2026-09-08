@@ -27,11 +27,22 @@
                 document.getElementById("calendar-events-data").textContent
             );
 
+            const narrowQuery = window.matchMedia("(max-width: 700px)");
+            const viewForWidth = function () {
+                return narrowQuery.matches ? "listWeek" : "dayGridMonth";
+            };
+
             const calendar = new FullCalendar.Calendar(calendarEl, {
-                initialView: "dayGridMonth",
+                initialView: viewForWidth(),
                 height: "auto",
                 timeZone: "local",
                 events: events,
+                windowResize: function () {
+                    const target = viewForWidth();
+                    if (calendar.view.type !== target) {
+                        calendar.changeView(target);
+                    }
+                },
                 eventContent: function (arg) {
                     const participants = arg.event.extendedProps.participants || [];
                     const extraCount = arg.event.extendedProps.extra_count || 0;
