@@ -11,8 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- The dashboard calendar on phones showed only the current week and hid days
-  with no events; it now lists the whole month.
+- The dashboard calendar on phones showed only a list of the days that had
+  events (from the responsive view switch added in v2.0.2). It now shows the
+  full month grid at every screen size again, as it did before v2.0.2.
 
 ### Planned for v3.0.0 — AI Meeting Assistant
 
